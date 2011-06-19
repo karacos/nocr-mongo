@@ -2,9 +2,8 @@ var Repository = require('../src/Repository.js'),
 	core = require("../dep/Nu-Q/src/NuQCore.js"),
 	vows = require('vows'),
 	assert = require('assert'),
-	repositorySuite, apiSuite,
-	_ = require('util'),
-	testRepository
+	repositorySuite,
+	_ = require('util')
 	,nuqtests = require('../dep/Nu-Q/test/RepositoryImplTest.js');
 
 
@@ -21,11 +20,7 @@ repositorySuite.addBatch({
 			},this.callback);
 		},
 		"Can get repository": function(err, repo) {
-			testRepository = repo;
-//			 Setting the topic of apisuite
-			apiSuite.topic = testRepository;
-//			console.log(this.context);
-//			this.context["API Test suite"] = nuqtests.implSuite(testRepository);
+			nuqtests.setRepositoryInstance(repo);
 			if (err !== null) {
 				_.log(err);
 			}
@@ -33,9 +28,5 @@ repositorySuite.addBatch({
 		}
 	}
 });
-apiSuite = nuqtests.getSuite();
-repositorySuite.addBatch(apiSuite);
-//repositorySuite.addBatch({"API Test suite": nuqtests.implSuite(testRepository)});
-	
-
+repositorySuite.addBatch(nuqtests.getSuite());
 exports.repositorySuite = repositorySuite;
