@@ -1,19 +1,25 @@
-var core = require("../dep/NEQ-CR/src/NEQCore.js"), Repository,
-__hasProp = Object.prototype.hasOwnProperty,
-__extends = function(child, parent) {
-    for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
-    function ctor() { this.constructor = child; }
-    ctor.prototype = parent.prototype;
-    child.prototype = new ctor;
-    child.__super__ = parent.prototype;
-    return child;
-  };
+var core = require("../dep/Nu-Q/src/NuQCore.js"),
+	_ = require('util'),
+	wrapper = require('./wrapper.js'),
+	Session = require('./Session.js'),
+	Repository;
 
-Repository = __extends(Repository,core.Repository);
-function Repository(config) {
+function Repository(config, callback) {
+	var self = this;
     if (typeof config === "undefined" || config === null) {
         throw new Error("Missing options parameter");
     }
+    wrapper.getClient(config.db, function(err, client){
+    	if (err === null) {
+    		self.client = client;
+    		//console.log(self);
+    		callback(null, self);
+    	} else {
+    		console.log(err);
+    		callback(err);
+    	}
+    });
 }
-    
+_.inherits(Repository,core.Repository);
+
 module.exports = Repository;
