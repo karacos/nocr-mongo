@@ -1,0 +1,3 @@
+[submodule "dep/Nu-Q"]
+	path = dep/Nu-Q
+	url = https://github.com/nka11/Nu-Q.git
