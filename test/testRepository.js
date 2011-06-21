@@ -34,14 +34,26 @@ repositorySuite.addBatch({
 				nuqtests.getRepository().login({username: 'admin', password:'demo'}, "testWorkSpace",this.callback);
 			},
 			'Test Session object' : function(err,session){
-				_.debug(err);
 				assert.ok((session instanceof core.Session),'Session is not a session object');
 			}
-		}})
+		},
+		'[karacos] Testing admin wrong password login': {
+			topic: function(){
+				nuqtests.getRepository().login({username: 'admin', password:'notdemo'}, "testWorkSpace",this.callback);
+			},
+			'Test Session object' : function(err,session){
+				_.debug(_.inspect(err));
+				_.debug(typeof err);
+				assert.ok(typeof err === 'string','Error must be a String');
+				assert.ok((session === null || session === undefined),'Session is not null');
+			}
+		}
+	});
 repositorySuite.addBatch(nuqtests.getSuite());
 repositorySuite.addBatch({
 	"Cleanup": {
 		topic: function() {
+			// implementation specific method for dropping the repository
 			nuqtests.getRepository().drop(this.callback);
 		},
 		"Drop repository": function(err, res) {
