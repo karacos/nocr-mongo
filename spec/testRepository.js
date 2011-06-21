@@ -28,28 +28,5 @@ repositorySuite.addBatch({
 		}
 	}
 });
-repositorySuite.addBatch({
-		'[karacos] Testing admin default login': {
-			topic: function(){
-				nuqtests.getRepository().login({username: 'admin', password:'demo'}, "testWorkSpace",this.callback);
-			},
-			'Test Session object' : function(err,session){
-				_.debug(err);
-				assert.ok((session instanceof core.Session),'Session is not a session object');
-			}
-		}})
 repositorySuite.addBatch(nuqtests.getSuite());
-repositorySuite.addBatch({
-	"Cleanup": {
-		topic: function() {
-			nuqtests.getRepository().drop(this.callback);
-		},
-		"Drop repository": function(err, res) {
-			if (err != null) {
-				console.log(err);
-			}
-			assert.ok(err === null,"Error while deleting repository");
-		}
-	}
-});
 exports.repositorySuite = repositorySuite;
