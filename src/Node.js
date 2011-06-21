@@ -4,9 +4,13 @@ var core = require("../dep/Nu-Q/src/NuQCore.js"),
 	Item = require('./Item.js'),
 	Node;
 
-function Node() {
+function Node(properties) {
+	Item.call(this, properties);
+	this.path = properties.path;
+	
+	
 	
 }
-_.inherits(Node,core.Node);
 _.inherits(Node,Item);
+_.inherits(Node,core.Node);
 module.exports = Node;

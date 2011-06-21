@@ -7,7 +7,7 @@ var Repository = require('../src/Repository.js'),
 	,nuqtests = require('../dep/Nu-Q/test/RepositoryImplTest.js');
 
 
-repositorySuite = vows.describe('KaraCos Nu-Q test');
+repositorySuite = vows.describe('KaraCos Nu-Q test Repository');
 repositorySuite.addBatch({
 	"Testing new Repository": {
 		topic: function() {

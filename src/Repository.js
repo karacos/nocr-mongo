@@ -9,7 +9,7 @@ function Repository(config, callback) {
     if (typeof config === "undefined" || config === null) {
         throw new Error("Missing options parameter");
     }
-    this.config = config
+    this.config = config;
     wrapper.getClient(config.db, function(err, client){
     	if (err === null) {
     		self.client = client;
