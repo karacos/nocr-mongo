@@ -23,6 +23,7 @@ nodeSuite.addBatch({
 				testrepository = repository;
 				repository.login({username: 'admin', password:'demo'}, "testWorkSpace",
 						function(err, session){
+					nuqtests.setSession(session);
 					session.getRootNode(self.callback);
 				});
 			});

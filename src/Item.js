@@ -3,10 +3,10 @@ var core = require("../dep/Nu-Q/src/NuQCore.js"),
 	wrapper = require('./wrapper.js'),
 	Item;
 
-function Item(properties) {
-	this.path = properties.path;
+function Item(data) {
+	this.data = data;
 	this.getPath = function() {
-		return this.path;
+		return this.data.path;
 	};
 }
 _.inherits(Item,core.Item);

@@ -85,9 +85,10 @@ Session = function(repository, credentials, callback) {
 	 * Returns the attached Repository's root
 	 */
 	this.getRootNode = function(callback) {
-		var node = new Node({path: '/'});
-		callback(null, node);
+		self.repository.getRootNode(callback);
 	};
+	
+	this.getNode = function(abspath, callback) {callback(null,null)};
 	initSession();
 };
 
