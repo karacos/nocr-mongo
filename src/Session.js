@@ -88,7 +88,9 @@ Session = function(repository, credentials, callback) {
 		self.repository.getRootNode(callback);
 	};
 	
-	this.getNode = function(abspath, callback) {callback(null,null)};
+	this.getNode = function(abspath, callback) {
+		self.repository.getNode(abspath,callback);
+		};
 	initSession();
 };
 

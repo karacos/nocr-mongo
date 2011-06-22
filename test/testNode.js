@@ -30,7 +30,7 @@ nodeSuite.addBatch({
 		},
 		"Root Node returned": function(err, node) {
 			nuqtests.setNode(node);
-			assert.ok(node !== undefined,'Node ibject is undefined');
+			assert.ok(node !== undefined,'Node object is undefined');
 		}
 	}
 });
@@ -44,9 +44,6 @@ nodeSuite.addBatch({
 			testrepository.drop(this.callback);
 		},
 		"Drop repository": function(err, res) {
-			if (err != null) {
-				console.log(err);
-			}
 			assert.ok(err === null,"Error while deleting repository");
 		}
 	}
