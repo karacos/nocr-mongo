@@ -4,39 +4,56 @@ var core = require("../dep/Nu-Q/src/NuQCore.js"),
 	Session = require('./Session.js'),
 	Node = require('./Node.js'),
 	Repository;
-
+/**
+ * 
+ * @param config an object representing the config:
+ * 
+ * ```
+ * {
+ *     'db': { // database parameters
+ *       
+ *       },
+ *     'nodes': { // node cache object handler
+ *       getNode: function(abspath,callback) {}, params of callback :(error, Node)
+ *       setNode: function(abspath, node, callback) {}: (error, Node) 
+ *       }
+ *     }
+ * ```
+ * 
+ * @param callback (err, Repository)
+ * @returns {Repository}
+ */
 function Repository(config, callback) {
 	var self = this;
-	this.nodes = {};
-    if (typeof config === "undefined" || config === null) {
-        throw new Error("Missing options parameter");
-    }
-    this.config = config;
-    wrapper.getClient(config.db, function(err, client){
-    	if (err === null) {
-    		self.client = client;
-    		//console.log(self);
-    		callback(null, self);
-    	} else {
-    		_.error(err);
-    		callback(err);
-    	}
-    });
-    function getNodesCollection(callback) {
-    	if (self.nodesCollection !== undefined) {
-    		callback(null, self.nodesCollection);
-    	} else {
-    		self.client.collection('repository_nodes', function(err, collection) {
-    			if (err === null) {
-    				self.nodesCollection = collection;
-    				callback(err, collection);
-    			} else {
-    				_.error(err);
-    				callback(err);
-    			}
-    		});
-    	}
-    }
+	//TODO: this is a raw in-memory cache.
+	// It may use some library dependency and/or allow a shared cache (if it make sense ?).
+	// anyway, it can be overridden by top-level caller for the most flexible use.
+	function getNodesCollection(callback) {
+		if (self.nodesCollection !== undefined) {
+			callback(null, self.nodesCollection);
+		} else {
+			self.client.collection('repository_nodes', function(err, collection) {
+				if (err === null) {
+					self.nodesCollection = collection;
+					callback(err, collection);
+				} else {
+					_.error(err);
+					callback(err);
+				}
+			});
+		}
+	}
+	this.nodes = {
+			data: {},
+			setNode: function(abspath, node, callback) {
+				this.data[node.getPath()] = node;
+				callback(null, node);
+			},
+			getNode: function(abspath,callback) {
+				callback(null, this.data[abspath]);
+			}
+		};
+	
     this.login = function(credentials, workspaceName, callback) {
     	var 
     		session = new Session(self,credentials, function(err,sess) {
@@ -63,75 +80,75 @@ function Repository(config, callback) {
      */
     this.getNode = function(abspath,callback) {
     	var self = this;
-    	if (this.nodes[abspath] !== undefined) {
-    		callback(null,this.nodes[abspath]);
-    	} else {
-    		getNodesCollection(function(err, collection){
-    			collection.find({path: abspath}).toArray(function(err, items){
-    				if (err !== null) {
-    					callback(err);
-    				}
-    				if (items.length === 1) {
-    					if (self.nodes[abspath] === undefined)
-    						self.nodes[abspath] = new Node(items[0]);
-    					callback(null, self.nodes[abspath]);
-    				}else if (items.length === 0) {
-    					callback(null,undefined);
-    				} else {
-    					callback("More than one node with the same abspath");
-    				}
+    	self.nodes.getNode(abspath, function(err, node) {
+    		if (node !== undefined) {
+    			callback(null,node);
+    		} else {
+    			getNodesCollection(function(err, collection){
+    				collection.find({path: abspath}).toArray(function(err, items){
+    					if (err !== null) {
+    						callback(err);
+    					}
+    					if (items.length === 1) {
+    						self.nodes.setNode(abspath,new Node(items[0]), function(err, node){
+        						callback(null, node);
+    						});
+    					}else if (items.length === 0) {
+    						callback(null,undefined);
+    					} else {
+    						callback("More than one node with the same abspath");
+    					}
+    				});
     			});
-    		});
-    	}
+    		}
+    		
+    	});
     };
     /**
      * Implementation specific method
      */
     this.getRootNode = function(callback) {
-    	var self = this;
-    	if (self.rootNode !== undefined) {
-    		return callback(null, self.rootNode);
-    	}
+    	var self = this, abspath = '/';
+    	
     	function createRootNode(callback) {
     		getNodesCollection(function(err, collection){
 	    		collection.insert({
-	    			path: '/'
+	    			path: abspath
 	    		}, {safe: true}, function(err, result) {
 	    			if (err !== null) {
 	    				callback(err);
 	    			} else {
-	    				getRootNode(callback);
+	    				self.getNode('/',callback);
 	    			}
 	    		});
     		});
     	}
-    	function getRootNode(callback) {
-    		getNodesCollection(function(err, collection){
-	    		collection.find({path: "/"}).toArray(function(err, items){
-					if (err !== null) {
-						callback(err);
-					} else {
-						self.rootNode = new Node(items[0]);
-						self.nodes['/'] = self.rootNode;
-						_.debug("rootNode found: " + _.inspect(self.rootNode)); 
-						callback(null, self.rootNode);
-					}
-				});
-    		});
-    	}
-    	getNodesCollection(function(err, collection){
-    		collection.count(function(err, count) {
-				if (count === 0) {
-					_.log("Empty repository, creating RootNode");
-					collection.createIndex([['path', 1]], true, function(err, result) {
-						createRootNode(callback);
-					});
-				} else {
-					getRootNode(callback);
-				}
-			});
+    	self.getNode('/', function(err, node) {
+    		if (node === undefined) {
+    			createRootNode(function(err, rootNode){
+    				self.nodes.setNode(abspath, rootNode, callback); 
+    			});
+    		} else {
+    			callback(err, node);
+    		}
     	});
     };
+    // process the repository Initialization
+    if (typeof config === "undefined" || config === null) {
+        throw new Error("Missing options parameter");
+    }
+    
+    this.config = config;
+    wrapper.getClient(config.db, function(err, client){
+    	if (err === null) {
+    		self.client = client;
+    		//console.log(self);
+    		callback(null, self);
+    	} else {
+    		_.error(err);
+    		callback(err);
+    	}
+    });
 }
 _.inherits(Repository,core.Repository);
 
