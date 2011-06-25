@@ -25,17 +25,20 @@ var core = require("../dep/Nu-Q/src/NuQCore.js"),
  */
 function Repository(config, callback) {
 	var self = this;
-	//TODO: this is a raw in-memory cache.
-	// It may use some library dependency and/or allow a shared cache (if it make sense ?).
-	// anyway, it can be overridden by top-level caller for the most flexible use.
 	function getNodesCollection(callback) {
 		if (self.nodesCollection !== undefined) {
 			callback(null, self.nodesCollection);
 		} else {
-			self.client.collection('repository_nodes', function(err, collection) {
+			self.client.collection('repository.nodes', function(err, nodesCollection) {
 				if (err === null) {
-					self.nodesCollection = collection;
-					callback(err, collection);
+					self.nodesCollection = nodesCollection;
+					self.nodesCollection.count(function(err, count) {
+						if (count === 0) {
+							callback(err, nodesCollection);
+						} else {
+							callback(err, nodesCollection);
+						}
+					});
 				} else {
 					_.error(err);
 					callback(err);
@@ -43,16 +46,6 @@ function Repository(config, callback) {
 			});
 		}
 	}
-	this.nodes = {
-			data: {},
-			setNode: function(abspath, node, callback) {
-				this.data[node.getPath()] = node;
-				callback(null, node);
-			},
-			getNode: function(abspath,callback) {
-				callback(null, this.data[abspath]);
-			}
-		};
 	
     this.login = function(credentials, workspaceName, callback) {
     	var 
@@ -69,74 +62,55 @@ function Repository(config, callback) {
     this.drop = function(callback) {
     	self.client.dropDatabase(function(err, done) {
     		if (err !== null) {
+    			_.debug('fail removing database');
     			callback(err,done);
     		} else {
+    			console.log(done);
+    			_.debug('database removed successfully');
+    			self.client.close();
     			callback(null,"Database drop command successful, repository deleted");
     		}
-    	});
-    };
-    /**
-     * Implementation specific method, gets a node at absolute path
-     */
-    this.getNode = function(abspath,callback) {
-    	var self = this;
-    	self.nodes.getNode(abspath, function(err, node) {
-    		if (node !== undefined) {
-    			callback(null,node);
-    		} else {
-    			getNodesCollection(function(err, collection){
-    				collection.find({path: abspath}).toArray(function(err, items){
-    					if (err !== null) {
-    						callback(err);
-    					}
-    					if (items.length === 1) {
-    						self.nodes.setNode(abspath,new Node(items[0]), function(err, node){
-        						callback(null, node);
-    						});
-    					}else if (items.length === 0) {
-    						callback(null,undefined);
-    					} else {
-    						callback("More than one node with the same abspath");
-    					}
-    				});
-    			});
-    		}
-    		
     	});
     };
     /**
      * Implementation specific method
      */
     this.getRootNode = function(callback) {
-    	var self = this, abspath = '/';
+    	var self = this;
     	
-    	function createRootNode(callback) {
+    	function createRootNode() {
     		getNodesCollection(function(err, collection){
 	    		collection.insert({
-	    			path: abspath
+	    			// path: abspath -- This is my repository root node
 	    		}, {safe: true}, function(err, result) {
 	    			if (err !== null) {
 	    				callback(err);
 	    			} else {
-	    				self.getNode('/',callback);
+	    				self.rootNode = result;
+	    				callback(err, result[0]);
 	    			}
 	    		});
     		});
     	}
-    	self.getNode('/', function(err, node) {
-    		if (node === undefined) {
-    			createRootNode(function(err, rootNode){
-    				self.nodes.setNode(abspath, rootNode, callback); 
-    			});
-    		} else {
-    			callback(err, node);
-    		}
-    	});
+    	if (typeof self.rootNode !== 'undefined') {
+    		callback(err, self.rootNode);
+    	} else {
+    		createRootNode();
+    	}
     };
     // process the repository Initialization
     if (typeof config === "undefined" || config === null) {
         throw new Error("Missing options parameter");
     }
+    
+    this.getDataById = function(id,callback) {
+    	getNodesCollection(function(err, nodesCollection){
+    		nodesCollection.find({"_id":id}).limit(1).toArray(function(err, node){
+    			callback(err, node[0]);
+    		});
+
+    	});
+    };
     
     this.config = config;
     wrapper.getClient(config.db, function(err, client){

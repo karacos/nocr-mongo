@@ -9,7 +9,6 @@ var wrapper = require('../src/wrapper.js'),
 
 wrapperSuite = vows.describe('testWrapper Suite');
 
-
 wrapperSuite.addBatch({
 	"Test getClient":{
 		topic: function() {

@@ -5,7 +5,8 @@ var Repository = require('../src/Repository.js'),
 	nodeSuite, testrepository,
 	_ = require('util')
 	// This is the coffee test compiled in js
-	,nuqtests = require('../dep/Nu-Q/test/NodeImplTest.js');
+	,nuqtestsNode = require('../dep/Nu-Q/test/NodeImplTest.js')
+	,nuqtestDirect = require('../dep/Nu-Q/test/DirectAccessTest.js');
 
 nodeSuite = vows.describe('KaraCos Nu-Q test Node');
 
@@ -21,21 +22,25 @@ nodeSuite.addBatch({
 				}
 			},function(err, repository){
 				testrepository = repository;
+				nuqtestDirect.setRepository(repository);
 				repository.login({username: 'admin', password:'demo'}, "testWorkSpace",
 						function(err, session){
-					nuqtests.setSession(session);
+					nuqtestsNode.setSession(session);
+					nuqtestDirect.setSession(session);
 					session.getRootNode(self.callback);
 				});
 			});
 		},
 		"Root Node returned": function(err, node) {
-			nuqtests.setNode(node);
+			nuqtestsNode.setNode(node);
+			nuqtestDirect.setNode(node);
 			assert.ok(node !== undefined,'Node object is undefined');
 		}
 	}
 });
 
-nodeSuite.addBatch(nuqtests.getSuite());
+nodeSuite.addBatch(nuqtestsNode.getSuite());
+nodeSuite.addBatch(nuqtestDirect.getSuite());
 
 nodeSuite.addBatch({
 	"Cleaning Repository": {

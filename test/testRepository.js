@@ -13,7 +13,7 @@ repositorySuite.addBatch({
 		topic: function() {
 			new Repository({
 				db: {
-					dbname: "karacos_wrapperSuite",
+					dbname: "karacos_repositorySuite",
 					dbhost: "127.0.0.1",
 					dbport: 27017
 				}
