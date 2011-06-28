@@ -2,16 +2,16 @@ var core = require("../dep/Nu-Q/src/NuQCore.js"),
 	_ = require('util'),
 	wrapper = require('./wrapper.js'),
 	Item = require('./Item.js'),
-	Node;
+	Property;
 
 /**
 
  * @param data
  */
 
-function Node(type, data) {
+function Property(data) {
 	Item.call(this, data);
-	this.primaryType = type;
+	
 }
-_.inherits(Node,core.Node);
-module.exports = Node;
+_.inherits(Property,core.Property);
+module.exports = Property;

@@ -3,6 +3,7 @@ var core = require("../dep/Nu-Q/src/NuQCore.js"),
 	wrapper = require('./wrapper.js'),
 	Session = require('./Session.js'),
 	Node = require('./Node.js'),
+	Item = require('./Item.js');
 	Repository;
 /**
  * 

@@ -22,24 +22,24 @@ function Workspace(session, data, callback) {
 		callback(null, self);
 	}
 	
-	function getNodesIndex(callback) {
-		if (self.nodesIndex !== undefined) {
-			callback(null, self.nodesIndex);
+	function getItemsIndex(callback) {
+		if (self.itemsIndex !== undefined) {
+			callback(null, self.itemsIndex);
 		} else {
-			client.collection('workspace.' + self.name + '.nodesIndex', function(err, nodesIndex) {
-				self.nodesIndex = nodesIndex;
-				self.nodesIndex.count(function(err, count) {
+			client.collection('workspace.' + self.name + '.itemsIndex', function(err, itemsIndex) {
+				self.itemsIndex = itemsIndex;
+				self.itemsIndex.count(function(err, count) {
 					if (count === 0 ) {
-						populateWorkspace(nodesIndex, callback);
+						populateWorkspace(itemsIndex, callback);
 					} else {
-						callback(err, nodesIndex);
+						callback(err, itemsIndex);
 					}
 				});
 			});
 		}
 	}
 	
-	function populateWorkspace(nodesIndex, callback) {
+	function populateWorkspace(itemsIndex, callback) {
 		function indexRootNode(err, rootNode) {
 			_.debug("Indexing rootNode");
 			_.log(_.inspect(rootNode));
@@ -79,7 +79,7 @@ function Workspace(session, data, callback) {
     		if (node !== undefined) {
     			callback(null,node);
     		} else {
-    			getNodesIndex(function(err, nodesIndex){
+    			getItemIndex(function(err, nodesIndex){
     				nodesIndex.find({'path': abspath}).toArray(function(err, items){
     					if (err !== null) {
     						callback(err);
