@@ -1,7 +1,5 @@
 //persist this (3.7.14)
 var typesMap = {
-		'nt:base': require('./Base.js'),
-		'nt:unstructured': require('./Unstructured.js')
 };
 nodeTypeManager = {
 	createNodeDefinitionTemplate: function createNodeDefinitionTemplate(callback){
@@ -15,8 +13,8 @@ nodeTypeManager = {
 			callback = undefined;
 		}
 	},
-	getNodeType: function getNodeType(nodeName, callback) {
-		callback(null,typesMap[typename]);
+	getNodeType: function getNodeType(nodeName) {
+		return typesMap[typename]['typedef'];
 	},
 	getMixinNodeTypes: function getMixinNodeTypes(callback) {
 		
@@ -30,8 +28,27 @@ nodeTypeManager = {
 	hasNodeType: function hasNodeType(nodeName, callback) {
 		
 	},
-	registerNodeType: function registerNodeType(type, allowupdate, callback) {
-		
+	/**
+	 * Registers a new node type.
+	 * Check against 3.7.14.1 nt:nodeType (p56) validation of type
+	 * @param type
+	 * @param allowupdate
+	 * @param callback
+	 */
+	registerNodeType: function registerNodeType(type, allowupdate) {
+		if (type['jcr:nodeTypeName'] in typesMap) {
+			if (typesMap[type['jcr:nodeTypeName']]['allowupdate']) {
+				typesMap[type['jcr:nodeTypeName']]['typedef'] = type;
+				typesMap[type['jcr:nodeTypeName']]['allowupdate'] = allowupdate;
+			} else {
+				throw new Error('Update is not allowed');
+			}
+		} else {
+			typesMap[type['jcr:nodeTypeName']] = {
+					'allowupdate': allowupdate,
+					'typedef': type
+			}
+		}
 	},
 	registerNodeTypes: function registerNodeTypes(types, allowupdate, callback) {
 		

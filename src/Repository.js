@@ -8,7 +8,7 @@ var core = require("../dep/Nu-Q/src/NuQCore.js"),
 /**
  * 
  * @param config an object representing the config:
- * 
+ * 24.2 Repository Descriptors p 262
  * ```
  * {
  *     'db': { // database parameters
@@ -24,20 +24,22 @@ var core = require("../dep/Nu-Q/src/NuQCore.js"),
  * @param callback (err, Repository)
  * @returns {Repository}
  */
+
 function Repository(config, callback) {
 	var self = this;
-	function getNodesCollection(callback) {
-		if (self.nodesCollection !== undefined) {
-			callback(null, self.nodesCollection);
+	
+	function getItemsCollection(callback) {
+		if (self.itemsCollection !== undefined) {
+			callback(null, self.itemsCollection);
 		} else {
-			self.client.collection('repository.nodes', function(err, nodesCollection) {
+			self.client.collection('repository.items', function(err, itemsCollection) {
 				if (err === null) {
-					self.nodesCollection = nodesCollection;
-					self.nodesCollection.count(function(err, count) {
+					self.itemsCollection = itemsCollection;
+					self.itemsCollection.count(function(err, count) {
 						if (count === 0) {
-							callback(err, nodesCollection);
+							callback(err, self.itemsCollection);
 						} else {
-							callback(err, nodesCollection);
+							callback(err, self.itemsCollection);
 						}
 					});
 				} else {
@@ -80,7 +82,7 @@ function Repository(config, callback) {
     	var self = this;
     	
     	function createRootNode() {
-    		getNodesCollection(function(err, collection){
+    		getItemsCollection(function(err, collection){
 	    		collection.insert({
 	    			// path: abspath -- This is my repository root node
 	    		}, {safe: true}, function(err, result) {
@@ -88,7 +90,7 @@ function Repository(config, callback) {
 	    				callback(err);
 	    			} else {
 	    				self.rootNode = result;
-	    				callback(err, result[0]);
+	    				callback(err, new Node(result[0]));
 	    			}
 	    		});
     		});
@@ -125,6 +127,74 @@ function Repository(config, callback) {
     	}
     });
 }
+
+Repository.prototype = {
+		stdDescriptors: {
+			// Repository Information
+			'SPEC_VERSION_DESC': "2.0",
+			'SPEC_NAME_DESC': "Content Repository for javascript nodejs technology",
+			'REP_VENDOR_DESC': "Karacos org",
+			'REP_VENDOR_URL_DESC':"http://github.com/karacos/karacos-nuq-mongodb",
+			'REP_NAME_DESC': "Karacos Nu-Q CR implementation for mongodb",
+			'REP_VERSION_DESC': "0.1.1",
+			// General Informations
+			'WRITE_SUPPORTED': true,
+			'IDENTIFIER_STABILITY': '', // TODO 'See 3.7 Identifiers', determine value for this impl
+/*
+ * IDENTIFIER_STABILITY_METHOD_DURATION: Identifiers may change between method calls
+ * IDENTIFIER_STABILITY_SAVE_DURATION: Identifiers are guaranteed stable within a single save/refresh cycle.
+ * IDENTIFIER_STABILITY_SESSION_DURATION: Identifiers are guaranteed stable within a single session.
+ * IDENTIFIER_STABILITY_INDEFINITE_DURATION: Identifiers are guaranteed to be stable forever. Note that referenceable identifiers always have this level of stability.
+ */
+			'OPTION_XML_IMPORT_SUPPORTED': false, //TODO Implements in order to be true
+			'OPTION_UNFILED_CONTENT_SUPPORTED': false,//TODO Implements in order to be true
+			'OPTION_SIMPLE_VERSIONING_SUPPORTED': false,
+			'OPTION_ACTIVITIES_SUPPORTED': false,
+			'OPTION_BASELINES_SUPPORTED': false,
+			'OPTION_ACCESS_CONTROL_SUPPORTED': false,
+			'OPTION_LOCKING_SUPPORTED': false,
+			'OPTION_OBSERVATION_SUPPORTED': false,
+			'OPTION_JOURNALED_OBSERVATION_SUPPORTED': false,
+			'OPTION_RETENTION_SUPPORTED': false,
+			'OPTION_LIFECYCLE_SUPPORTED': false,
+			'OPTION_TRANSACTIONS_SUPPORTED': false,
+			'OPTION_WORKSPACE_MANAGEMENT_SUPPORTED': false,
+			'OPTION_NODE_AND_PROPERTY_WITH_SAME_NAME_SUPPORTED': false,
+			//
+			// Nodes operation
+			//
+			'OPTION_UPDATE_PRIMARY_NODE_TYPE_SUPPORTED': false,
+			'OPTION_UPDATE_MIXIN_NODE_TYPES_SUPPORTED': true,
+			'OPTION_SHAREABLE_NODES_SUPPORTED': false,
+			//
+			//Node type management
+			'OPTION_NODE_TYPE_MANAGEMENT_SUPPORTED': false,
+			'NODE_TYPE_MANAGEMENT_INHERITANCE': false,
+			'NODE_TYPE_MANAGEMENT_OVERRIDES_SUPPORTED': false,
+			'NODE_TYPE_MANAGEMENT_PRIMARY_ITEM_NAME_SUPPORTED': false,
+			'NODE_TYPE_MANAGEMENT_ORDERABLE_CHILD_NODES_SUPPORTED': false,
+			'NODE_TYPE_MANAGEMENT_RESIDUAL_DEFINITIONS_SUPPORTED': false,
+			'NODE_TYPE_MANAGEMENT_AUTOCREATED_DEFINITIONS_SUPPORTED': false,
+			'NODE_TYPE_MANAGEMENT_SAME_NAME_SIBLINGS_SUPPORTED': false,
+			'NODE_TYPE_MANAGEMENT_PROPERTY_TYPES': false,
+			'NODE_TYPE_MANAGEMENT_MULTIVALUED_PROPERTIES_SUPPORTED': false,
+			'NODE_TYPE_MANAGEMENT_MULTIPLE_BINARY_PROPERTIES_SUPPORTED': false,
+			'NODE_TYPE_MANAGEMENT_VALUE_CONSTRAINTS_SUPPORTED': false,
+			'NODE_TYPE_MANAGEMENT_UPDATE_IN_USE_SUPORTED': false,
+			//
+			// Query Languages
+			'QUERY_LANGUAGES': [],
+			'QUERY_STORED_QUERIES_SUPPORTED': false,
+			'QUERY_FULL_TEXT_SEARCH_SUPPORTED': false,
+			'QUERY_JOINS': 'QUERY_JOINS_NONE'
+			/*
+			 * QUERY_JOINS_NONE: Joins are not supported. Queries are limited to a single selector.
+			 * QUERY_JOINS_INNER: Inner joins are supported.
+			 * QUERY_JOINS_INNER_OUTER: Inner and outer joins are supported.
+			 */
+		}
+}
+
 _.inherits(Repository,core.Repository);
 
 module.exports = Repository;
