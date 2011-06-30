@@ -4,7 +4,8 @@ var core = require("../dep/Nu-Q/src/NuQCore.js"),
 	Session = require('./Session.js'),
 	Node = require('./Node.js'),
 	Item = require('./Item.js');
-	Repository;
+	Repository,
+	nodeTypeManager = require('./types/nodeTypeManager.js');
 /**
  * 
  * @param config an object representing the config:
@@ -84,13 +85,16 @@ function Repository(config, callback) {
     	function createRootNode() {
     		getItemsCollection(function(err, collection){
 	    		collection.insert({
+	    			'classType': 'Node',
+					'primaryNodeType': 'nt:unstructured'
 	    			// path: abspath -- This is my repository root node
 	    		}, {safe: true}, function(err, result) {
 	    			if (err !== null) {
 	    				callback(err);
 	    			} else {
-	    				self.rootNode = result;
-	    				callback(err, new Node(result[0]));
+	    				self.rootNode = new Node(nodeTypeManager.getNodeType(result[0]['primaryNodeType']) ,result[0]);
+	    				//console.log(self.rootNode);
+	    				callback(err, self.rootNode);
 	    			}
 	    		});
     		});
@@ -106,9 +110,11 @@ function Repository(config, callback) {
         throw new Error("Missing options parameter");
     }
     
-    this.getDataById = function(id,callback) {
-    	getNodesCollection(function(err, nodesCollection){
-    		nodesCollection.find({"_id":id}).limit(1).toArray(function(err, node){
+    this.getDataById = function(dataId,callback) {
+    	_.debug("Searching for id : " + dataId);
+    	getItemsCollection(function(err, itemsCollection){
+    		itemsCollection.find({"_id":dataId}).limit(1).toArray(function(err, node){
+    			_.debug("Search for id : " + dataId + " found data :" + _.inspect(node[0]));
     			callback(err, node[0]);
     		});
 
@@ -193,7 +199,7 @@ Repository.prototype = {
 			 * QUERY_JOINS_INNER_OUTER: Inner and outer joins are supported.
 			 */
 		}
-}
+};
 
 _.inherits(Repository,core.Repository);
 

@@ -1,6 +1,10 @@
 //persist this (3.7.14)
-var typesMap = {
-};
+var typesMap = {},
+	_ = require('util'),
+//nodeTypeManager = function(){
+//	console.log("Creating node type manager");
+//};
+
 nodeTypeManager = {
 	createNodeDefinitionTemplate: function createNodeDefinitionTemplate(callback){
 		
@@ -13,8 +17,8 @@ nodeTypeManager = {
 			callback = undefined;
 		}
 	},
-	getNodeType: function getNodeType(nodeName) {
-		return typesMap[typename]['typedef'];
+	getNodeType: function getNodeType(typeName) {
+		return typesMap[typeName]['typedef'];
 	},
 	getMixinNodeTypes: function getMixinNodeTypes(callback) {
 		
@@ -36,19 +40,24 @@ nodeTypeManager = {
 	 * @param callback
 	 */
 	registerNodeType: function registerNodeType(type, allowupdate) {
-		if (type['jcr:nodeTypeName'] in typesMap) {
-			if (typesMap[type['jcr:nodeTypeName']]['allowupdate']) {
-				typesMap[type['jcr:nodeTypeName']]['typedef'] = type;
-				typesMap[type['jcr:nodeTypeName']]['allowupdate'] = allowupdate;
+		if (allowupdate === undefined) {
+			allowupdate = false;
+		}
+		if (type.data['jcr:nodeTypeName'] in typesMap) {
+			if (typesMap[type.data['jcr:nodeTypeName']]['allowupdate']) {
+				typesMap[type.data['jcr:nodeTypeName']]['typedef'] = type;
+				typesMap[type.data['jcr:nodeTypeName']]['allowupdate'] = allowupdate;
 			} else {
+				_.error(_.inspect(type));
 				throw new Error('Update is not allowed');
 			}
 		} else {
-			typesMap[type['jcr:nodeTypeName']] = {
+			typesMap[type.data['jcr:nodeTypeName']] = {
 					'allowupdate': allowupdate,
 					'typedef': type
-			}
+			};
 		}
+		_.log("Registered node type [" + type.data['jcr:nodeTypeName'] + "]" );
 	},
 	registerNodeTypes: function registerNodeTypes(types, allowupdate, callback) {
 		
@@ -62,3 +71,4 @@ nodeTypeManager = {
 };
 
 module.exports = nodeTypeManager;
+require('./NodeType.js');

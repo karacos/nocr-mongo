@@ -1,6 +1,6 @@
 var Base = require("./Base.js"),
 	propertyTypes = require('./propertyTypes.js'),
-	NodeType = require('NodeType.js');
+	NodeType = require('./NodeType.js');
 
 /** 3.7.11.5 nt:resource p 52
  * This node type may be used to represent the content of a file. In particular, the

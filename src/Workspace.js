@@ -42,9 +42,9 @@ function Workspace(session, data, callback) {
 	function populateWorkspace(itemsIndex, callback) {
 		function indexRootNode(err, rootNode) {
 			_.debug("Indexing rootNode");
-			_.log(_.inspect(rootNode));
-			nodesIndex.insert({
-				'node_id': rootNode._id,
+			//_.log(_.inspect(rootNode));
+			itemsIndex.insert({
+				'item_id': rootNode.data._id,
 				'childrens': [],
 				'path': "/"
 			}, {safe: true}, function(err, result) {
@@ -52,7 +52,10 @@ function Workspace(session, data, callback) {
     			if (err !== null) {
     				callback(err);
     			} else {
-    				callback(err, nodesIndex);
+    				self.nodes.setNode('/',rootNode,
+					function() {
+    					callback(null, itemsIndex);
+    				});
     			}
     		});
 		}
@@ -79,16 +82,22 @@ function Workspace(session, data, callback) {
     		if (node !== undefined) {
     			callback(null,node);
     		} else {
-    			getItemIndex(function(err, nodesIndex){
-    				nodesIndex.find({'path': abspath}).toArray(function(err, items){
+    			getItemsIndex(function(err, itemsIndex){
+    				itemsIndex.find({'path': abspath}).toArray(function(err, items){
     					if (err !== null) {
     						callback(err);
     					}
     					if (items.length === 1) {
-    						console.log(items[0]);
-    						repository.getDataById(items[0].node_id, function(err, nodeData) {
+    						_.debug('Found Index : ' + _.inspect(items[0]));
+    						repository.getDataById(items[0].item_id, function(err, nodeData) {
+    							var node;
+    							if (err !== null) {
+    								console.log(err);
+    								callback(err);
+    							}
     							nodeData.path = abspath;
-    							self.nodes.setNode(abspath,new Node(nodeData), function(err, node){
+    							node = new Node(nodeTypeManager.getNodeType(nodeData['primaryNodeType']),nodeData);
+    							self.nodes.setNode(abspath, node, function(err, node){
     								callback(null, node);
     							});
     						});

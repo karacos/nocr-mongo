@@ -20,9 +20,8 @@ names. This node type also supports client-orderable child nodes.
 
 Base.extend({
 	'jcr:nodeTypeName': 'nt:unstructured',
-	'jcr:supertypes': ['mix:mimeType','mix:lastModified'],
 	'jcr:isAbstract': false,
-	'jcr:isQueryable': false,
+	'jcr:isQueryable': true,
 	'jcr:isMixin': false,
 	'jcr:hasOrderableChildNodes': false,
 	'jcr:primaryItemName': 'jcr:data',

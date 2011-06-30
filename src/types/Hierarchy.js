@@ -1,7 +1,7 @@
 var Base = require("./Base.js"),
 	Hierarchy,
 	propertyTypes = require('./propertyTypes.js'),
-	NodeType = require('NodeType.js');
+	NodeType = require('./NodeType.js');
 /** 
 3.7.11.1 nt:hierarchyNode
 [nt:hierarchyNode] > mix:created abstract

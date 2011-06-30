@@ -9,7 +9,24 @@ var Repository = require('../src/Repository.js'),
 	,nuqtestDirect = require('../dep/Nu-Q/test/DirectAccessTest.js');
 
 nodeSuite = vows.describe('KaraCos Nu-Q test Node');
-
+nodeSuite.addBatch({
+	"Getting RootNode": {
+		topic: function() {
+			var self = this;
+			new Repository({
+				db: {
+					dbname: "karacos_NodeSuite",
+					dbhost: "127.0.0.1",
+					dbport: 27017
+				}
+			},function(err, repository){
+				repository.drop(self.callback);
+			});
+		},
+		"Repository deleted": function(err, node) {
+			
+		}
+		}});
 nodeSuite.addBatch({
 	"Getting RootNode": {
 		topic: function() {

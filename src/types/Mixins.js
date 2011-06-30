@@ -1,4 +1,4 @@
-var NodeType = require('NodeType.js'),
+var NodeType = require('./NodeType.js'),
 	propertyTypes = require('./propertyTypes.js');
 
 /** 3.7.11.7 mix:created p53

@@ -1,4 +1,4 @@
-var NodeType = require('NodeType.js');
+var NodeType = require('./NodeType.js');
 /**
 Apply nt:base requirements (3.7.10.1 p 51)
 [nt:base] abstract
