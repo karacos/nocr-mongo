@@ -21,7 +21,7 @@ Session = function(repository, credentials, callback) {
 				}
 				new Workspace(self,items[0],function(err, ws) {
 					self.workspace = ws;
-					callback(null,self);
+					callback(err,self);
 					
 				});
 			});
@@ -64,8 +64,8 @@ Session = function(repository, credentials, callback) {
 				self.user = {username:user.username, id: user.userid, workspace:user.workspace};
 				setUserContext();
 			} else {
-				setAnonymous();
-				callback("Error, password does not match", null);
+				callback("User not found in Domain");
+				
 			}
 		}
 	}

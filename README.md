@@ -1,6 +1,8 @@
-# KaraCos Nu-Q MongoDB content repository implementation
+# KaraCos NoCR using MongoDB
 
 ## Getting started
+
+KaraCos-NoCR-MongoDB is a content repository implementing the  NoCR API, a JCR close, but asynchronous content repository API.
 
 ### Requirements
 
@@ -12,7 +14,7 @@ npm install mongodb
 
 ### Grab submodules
 
-karacos-nuq-mongodb depends on [Nu-Q](https://github.com/nka11/Nu-Q/), as a submodule:
+karacos-nocr-mongodb depends on [NoCR](https://github.com/NoCR/NoCR/), as a submodule:
 
 ```
 git submodule init
@@ -25,5 +27,5 @@ The testing framework is vows, install and run commands :
 
 ```
 npm install vows
-wows test/*
+vows test/testSuite.js --spec ## This will show the actual features covered
 ```
