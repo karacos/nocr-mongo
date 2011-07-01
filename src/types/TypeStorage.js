@@ -76,4 +76,3 @@ mandatory multiple
  * This node type used to store a child node definition within a node type definition,
  * which itself is stored as an nt:nodeType node.
  */
-exports

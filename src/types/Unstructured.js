@@ -59,4 +59,4 @@ Base.extend({
 			'jcr:requiredPrimaryTypes': ['nt:base'],
 			'jcr:sameNameSiblings': true
 		}]
-})
+});

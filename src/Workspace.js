@@ -117,5 +117,9 @@ function Workspace(session, data, callback) {
 
 
 _.inherits(Workspace,core.Workspace);
-
+Workspace.prototype = {
+		getNodeTypeManager: function() {
+			return nodeTypeManager;
+		}
+};
 module.exports = Workspace;
