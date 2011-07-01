@@ -111,11 +111,18 @@ function Repository(config, callback) {
     }
     
     this.getDataById = function(dataId,callback) {
-    	_.debug("Searching for id : " + dataId);
+    	var objectId;
+    	if (typeof dataId === "string") {
+    		objectId = new self.client.bson_serializer.ObjectID(dataId);
+    	} else {
+    		objectId = dataId;
+    	}
+    	
+    	_.debug("Searching for id : " + objectId);
     	getItemsCollection(function(err, itemsCollection){
-    		itemsCollection.find({"_id":dataId}).limit(1).toArray(function(err, node){
-    			_.debug("Search for id : " + dataId + " found data :" + _.inspect(node[0]));
-    			callback(err, node[0]);
+    		itemsCollection.find({"_id":objectId}).limit(1).toArray(function(err, item){
+    			_.debug("Search for id : " + objectId + " found data :" + _.inspect(item[0]));
+    			callback(err, item[0]);
     		});
 
     	});
