@@ -39,6 +39,9 @@ testSuite.addBatch({
 		},
 		"Assigning repository to delegate tests of NoCR API": function(err, repository) {
 			assert.ok(repository !== undefined,'Repository object is undefined');
+			//
+			// Tells API testsuite a reository to test
+			//
 			nocrTests.setRepository(repository);
 		},
 		'Testing admin default login': {
@@ -47,6 +50,9 @@ testSuite.addBatch({
 			},
 			'Test Session object' : function(err,session){
 				assert.ok((session instanceof core.Session),'Session is not a session object');
+				//
+				//Set up session object for testSuite
+				//
 				nocrTests.setSession(session);
 			}
 		},
@@ -59,10 +65,10 @@ testSuite.addBatch({
 				_.debug(typeof err);
 				assert.ok(typeof err === 'string','Error must be a String');
 				assert.ok((session === null || session === undefined),'Session is not null');
-			}
-		}
-	}});
-
+			}}}});
+//
+// wait until login is finished
+//
 testSuite.addBatch({
 	"[Karacos] Default repository values": {
 		"Getting root Node": {
@@ -70,9 +76,15 @@ testSuite.addBatch({
 				nocrTests.getSession().getRootNode(this.callback);
 			},
 			"Root Node returned": function(err, node) {
+				// set up node for testSuite 
+			// TODO: move up to API
 				nocrTests.setNode(node);
 				assert.ok(node !== undefined,'Node object is undefined');
 			}}}});
+
+//
+// add the tests from NoCR API
+//
 nocrTests.addNoCRBatch(testSuite);
 
 testSuite.addBatch({
