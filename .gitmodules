@@ -1,0 +1,3 @@
+[submodule "node_modules/NoCR"]
+	path = node_modules/NoCR
+	url = https://github.com/NoCR/NoCR.git
