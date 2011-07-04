@@ -21,7 +21,7 @@ function Workspace(session, data, callback) {
 				callback(err);
 			}
 			nodeData.path = abspath;
-			node = new Node(nodeTypeManager.getNodeType(nodeData['primaryNodeType']),nodeData);
+			node = new Node(nodeData, this);
 			self.nodes.setNode(abspath, node, function(err, node){
 				callback(null, node);
 			});
@@ -72,7 +72,8 @@ function Workspace(session, data, callback) {
 	}
 	
 	function populateWorkspace(itemsIndex, callback) {
-		function indexRootNode(err, rootNode) {
+		function indexRootNode(err, rootNodeData) {
+			var rootNode = new Node(rootNodeData, self);
 			_.debug("Indexing rootNode");
 			//_.log(_.inspect(rootNode));
 			itemsIndex.insert({
@@ -91,7 +92,7 @@ function Workspace(session, data, callback) {
     			}
     		});
 		}
-		session.getRepository().getRootNode(indexRootNode);
+		session.getRepository().getRootNodeData(indexRootNode);
 	}
 	/**
 	 * Cache object for nodes instances
