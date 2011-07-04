@@ -1,4 +1,4 @@
-var core = require("../dep/Nu-Q/src/NuQCore.js"),
+var nocr = require("NoCR"),
 	_ = require('util'),
 	wrapper = require('./wrapper.js'),
 	Item;
@@ -9,5 +9,5 @@ function Item(data) {
 		return this.data.path;
 	};
 }
-_.inherits(Item,core.Item);
+_.inherits(Item,nocr.Item);
 module.exports = Item;

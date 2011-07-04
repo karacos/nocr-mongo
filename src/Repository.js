@@ -1,4 +1,4 @@
-var core = require("../dep/Nu-Q/src/NuQCore.js"),
+var nocr = require("NoCR"),
 	_ = require('util'),
 	wrapper = require('./wrapper.js'),
 	Session = require('./Session.js'),
@@ -208,6 +208,6 @@ Repository.prototype = {
 		}
 };
 
-_.inherits(Repository,core.Repository);
+_.inherits(Repository,nocr.Repository);
 
 module.exports = Repository;

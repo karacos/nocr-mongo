@@ -1,11 +1,11 @@
 var Repository = require('../src/Repository.js'),
-	core = require("../dep/Nu-Q/src/NuQCore.js"),
+	nocr = require("NoCR"),
 	vows = require('vows'),
 	assert = require('assert'),
 	testSuite, testrepository,
 	_ = require('util')
 	// This is the coffee test compiled in js
-	,nocrTests = require('../dep/Nu-Q/test/ImplTest.js');
+	,nocrTests = nocr.test.ImplTest;
 
 testSuite = vows.describe('KaraCos Nu-Q test Suite');
 testSuite.addBatch({
@@ -49,7 +49,7 @@ testSuite.addBatch({
 				nocrTests.getRepository().login({username: 'admin', password:'demo'}, "testWorkSpace",this.callback);
 			},
 			'Test Session object' : function(err,session){
-				assert.ok((session instanceof core.Session),'Session is not a session object');
+				assert.ok((session instanceof nocr.Session),'Session is not a session object');
 				//
 				//Set up session object for testSuite
 				//

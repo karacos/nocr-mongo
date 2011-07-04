@@ -1,6 +1,6 @@
 
 var NodeType, ntproto,
-	core = require("../../dep/Nu-Q/src/NuQCore.js"),
+	nocr = require("NoCR"),
 	nodeTypeManager = require('./nodeTypeManager.js'),
 	assert = require('assert'),
 	_ = require('util');
@@ -123,7 +123,7 @@ NodeType = function(data) {
 	}
 	this.constructor(data);
 };
-_.inherits(NodeType,core.NodeType);
+_.inherits(NodeType,nocr.nodetype.NodeType);
 module.exports = NodeType;
 
 // loading

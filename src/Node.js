@@ -1,4 +1,4 @@
-var core = require("../dep/Nu-Q/src/NuQCore.js"),
+var core = require("NoCR"),
 	_ = require('util'),
 	wrapper = require('./wrapper.js'),
 	Item = require('./Item.js'),

@@ -1,4 +1,4 @@
-var core = require("../dep/Nu-Q/src/NuQCore.js"),
+var nocr = require("NoCR"),
 	_ = require('util'),
 	wrapper = require('./wrapper.js'),
 	Node = require('./Node.js'),
@@ -168,6 +168,6 @@ Session = function(repository, credentials, callback) {
 	initSession();
 };
 
-_.inherits(Session,core.Session);
+_.inherits(Session,nocr.Session);
 
 module.exports = Session;
