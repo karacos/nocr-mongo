@@ -2,6 +2,7 @@
 var NodeType, ntproto,
 	nocr = require("NoCR"),
 	nodeTypeManager = require('./nodeTypeManager.js'),
+	NodeTypeDefinition = require('./NodeTypeDefinition.js'),
 	assert = require('assert'),
 	_ = require('util');
 
@@ -17,7 +18,6 @@ ntproto = {
 			if (!('jcr:supertypes' in data)) {
 				data['jcr:supertypes'] = [];
 			}
-			this.data = data;
 			nodeTypeManager.registerNodeType(this);
 		},
 		assertMandatory: function(data) {
@@ -60,7 +60,9 @@ ntproto = {
 			this.assertMandatory(data);
 			var key, property, type, typedata = {}, item;
 			for (key in this.data) {
-				typedata[key] = data[key];
+				if (data[key] !== undefined) {
+					typedata[key] = data[key];
+				}
 			}
 			for (key in typedata) {
 				if (typeof data[key] !== "object") {
@@ -77,12 +79,46 @@ ntproto = {
 			}
 			//_.log(_.inspect(typedata));
 			type = new NodeType(typedata);
+			type['data']['jcr:supertypes'].push(this['data']['jcr:nodeTypeName']);
+			type._super_ = this;
 			return type;
 		},
 		canAddChildNode: function(childName, childTypeName) {
+			var self = this,
+				result = false,
+				childType;
 			if (this.data['jcr:childNodeDefinition'].length > 0) {
-				
+				self['data']['jcr:childNodeDefinition'].forEach(function(propdef,i) {
+					var restr = "^" + propdef['jcr:name'] + "$",
+						re = new RegExp(restr);
+					if (re.test(childName)) {
+						if (childTypeName === undefined) {
+							propdef['jcr:requiredPrimaryTypes'].forEach(function(typename, i) {
+								if (!nodeTypeManager.getNodeType(typename).isAbstract()) {
+									result = true;
+								}
+							});
+						} else {
+							childType = nodeTypeManager.getNodeType(childTypeName); 
+							if (!childType.isAbstract()) {
+								//_.debug("Searching for " + childTypeName + " in " + propdef['jcr:requiredPrimaryTypes']);
+								if (propdef['jcr:requiredPrimaryTypes'].indexOf(childTypeName) >= 0) {
+									result = true;
+								} else {
+									//_.debug("supertypes of child node : " + _.inspect(childType.getSupertypes()));
+									childType.getSupertypes().forEach(function(supertypename) {
+										//_.debug("Searching for " + supertypename + " in " + propdef['jcr:requiredPrimaryTypes']);
+										if (propdef['jcr:requiredPrimaryTypes'].indexOf(supertypename) >= 0) {
+											result = true;
+										}
+									});
+								}
+							}
+						}
+					}
+				});
 			}
+			return result;
 		},
 		canRemoveNode: function(nodeName) {
 		},
@@ -90,7 +126,21 @@ ntproto = {
 			
 		},
 		canSetProperty: function(propertyName, propertyValue) {
-			
+			var result = false,
+				self = this,
+				compatibility = require('../utils/itemslookup.js').valueCompatibility;
+			self['data']['jcr:propertyDefinition'].forEach(function(propdef,i) {
+				var restr = "^" + propdef['jcr:name'] + "$",
+					re = new RegExp(restr);
+				
+				//_.debug("'jcr:requiredType' = " + propdef['jcr:requiredType']);
+				//_.debug(_.inspect(propdef));
+				if (compatibility[propdef['jcr:requiredType']].indexOf(propertyValue.getType()) > 0 &&
+						re.test(propertyName)) {
+					result = true;
+				}
+			});
+			return result;
 		},
 		getChildNodeDefinitions: function() {
 			
@@ -105,10 +155,11 @@ ntproto = {
 			
 		},
 		getSupertypes: function() {
-			
+			return this.data['jcr:supertypes'];
 		},
 		isNodeType: function(typeName) {
-			if (this.data['jcr:nodeTypeName'] == typeName) {
+			var self = this;
+			if (self.data['jcr:nodeTypeName'] == typeName) {
 				return true;
 			} else {
 				return false;
@@ -118,12 +169,15 @@ ntproto = {
 
 
 NodeType = function(data) {
+	var self = this;
+	NodeTypeDefinition.call(self, data);
 	for (k in ntproto) {
 		this[k] = ntproto[k];
 	}
 	this.constructor(data);
 };
 _.inherits(NodeType,nocr.nodetype.NodeType);
+
 module.exports = NodeType;
 
 // loading

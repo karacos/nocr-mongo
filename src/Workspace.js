@@ -2,7 +2,16 @@ var nocr = require("NoCR"),
 	_ = require('util'),
 	wrapper = require('./wrapper.js'),
 	Node = require('./Node.js'),
-	Workspace, populateWorkspace;
+	Workspace, populateWorkspace, wsproto;
+
+wsproto = {
+		getNodeTypeManager: function() {
+			return nodeTypeManager;
+		},
+		getName: function() {
+			return this.name;
+		}
+};
 /**
  * 
  */
@@ -13,6 +22,19 @@ function Workspace(session, data, callback) {
 		client = repository.client
 		;
 	
+	function initWorkspace() {
+		var k;
+		if (data === undefined) {
+			data = {name: 'default'};
+		}
+		self.name = data.name;
+		self.session = session;
+		callback(null, self);
+		for (k in wsproto) {
+			self[k] = wsproto[k];
+		}
+	}
+	
 	function getInstanciateNode(abspath, callback) {
 		function instanciateNode(err, nodeData) {
 			var node;
@@ -21,7 +43,7 @@ function Workspace(session, data, callback) {
 				callback(err);
 			}
 			nodeData.path = abspath;
-			node = new Node(nodeData, this);
+			node = new Node(nodeData, session);
 			self.nodes.setNode(abspath, node, function(err, node){
 				callback(null, node);
 			});
@@ -37,21 +59,12 @@ function Workspace(session, data, callback) {
 				callback(err);
 			}
 			propertyData.path = abspath;
-			property = new Property(propertyData);
+			property = new Property(propertyData, session);
 			self.properties.setProperty(abspath, property, function(err, property){
 				callback(null, property);
 			});
 		}
 		return Property;
-	}
-	
-	function initWorkspace() {
-		if (data === undefined) {
-			data = {name: 'default'};
-		}
-		self.name = data.name;
-		self.session = session;
-		callback(null, self);
 	}
 	
 	function getItemsIndex(callback) {
@@ -73,13 +86,13 @@ function Workspace(session, data, callback) {
 	
 	function populateWorkspace(itemsIndex, callback) {
 		function indexRootNode(err, rootNodeData) {
-			var rootNode = new Node(rootNodeData, self);
+			var rootNode = new Node(rootNodeData, session);
 			_.debug("Indexing rootNode");
 			//_.log(_.inspect(rootNode));
 			itemsIndex.insert({
-				'item_id': rootNode.data._id.toString(),
-				'type': 'Node',
-				'path': "/"
+				'item:id': rootNode.data._id.toString(),
+				'item:type': 'Node',
+				'item:path': "/"
 			}, {safe: true}, function(err, result) {
 				console.log(result);
     			if (err !== null) {
@@ -122,26 +135,26 @@ function Workspace(session, data, callback) {
 		};
 	session.getItem = function(abspath,callback) {
 		getItemsIndex(function(err, itemsIndex){
-			itemsIndex.find({'path': abspath}).toArray(function(err, items){
+			itemsIndex.find({'item:path': abspath}).toArray(function(err, items){
 				if (err !== null) {
 					callback(err);
 				}
 				if (items.length === 1) {
 					_.debug('Found Index : ' + _.inspect(items[0]));
-					if (items[0]['type'] === 'Node') {
+					if (items[0]['item:type'] === 'Node') {
 						self.nodes.getNode(abspath, function(err, node) {
 							if (node !== undefined) {
 								callback(null,node);
 							} else {
-								repository.getDataById(items[0].item_id, getInstanciateNode(abspath, callback));
+								repository.getDataById(items[0]['item:id'], getInstanciateNode(abspath, callback));
 							}
 						});
-					} else if (items[0]['type'] === 'Property') { // This is an Property
+					} else if (items[0]['item:type'] === 'Property') { // This is an Property
 						self.properties.getProperty(abspath, function(err, property) {
 							if (property !== undefined) {
 								callback(null,property);
 							} else {
-								repository.getDataById(items[0].item_id, getInstanciateProperty(abspath, callback));
+								repository.getDataById(items[0]['item:id'], getInstanciateProperty(abspath, callback));
 							}
 						});
 					}
@@ -155,7 +168,7 @@ function Workspace(session, data, callback) {
 	};
 	session.itemExists = function(abspath, callback) {
 		getItemsIndex(function(err, itemsIndex){
-			itemsIndex.find({'path': abspath, 'type':'Node'}).toArray(function(err, items){
+			itemsIndex.find({'item:path': abspath, 'item:type':'Node'}).toArray(function(err, items){
 				if (items.length === 1) {
 					callback(null, true);
 				} else if (items.length === 0) {
@@ -172,13 +185,13 @@ function Workspace(session, data, callback) {
     			callback(null,node);
     		} else {
     			getItemsIndex(function(err, itemsIndex){
-    				itemsIndex.find({'path': abspath, 'type':'Node'}).toArray(function(err, items){
+    				itemsIndex.find({'item:path': abspath, 'item:type':'Node'}).toArray(function(err, items){
     					if (err !== null) {
     						callback(err);
     					}
     					if (items.length === 1) {
     						_.debug('Found Index : ' + _.inspect(items[0]));
-							repository.getDataById(items[0].item_id, getInstanciateNode(abspath, callback));
+							repository.getDataById(items[0]['item:id'], getInstanciateNode(abspath, callback));
     					} else if (items.length === 0) {
     						callback("No Node found at path " + abspath,undefined);
     					} else {
@@ -191,7 +204,7 @@ function Workspace(session, data, callback) {
     };
     session.nodeExists = function(abspath,callback) {
     	getItemsIndex(function(err, itemsIndex){
-	    	itemsIndex.find({'path': abspath, 'type':'Node'}).toArray(function(err, items){
+	    	itemsIndex.find({'item:path': abspath, 'item:type':'Node'}).toArray(function(err, items){
 	    		if (items.length === 1) {
 					callback(null, true);
 				} else if (items.length === 0) {
@@ -204,7 +217,7 @@ function Workspace(session, data, callback) {
     };
     session.getNodeByIdentifier = function(nodeId, callback) {
     	getItemsIndex(function(err, itemsIndex){
-	    	itemsIndex.find({'item_id': nodeId, 'type': 'Node'}).toArray(function(err, items){
+	    	itemsIndex.find({'item:id': nodeId, 'item:type': 'Node'}).toArray(function(err, items){
 	    		_.debug("found item :" + _.inspect(items));
 	    		if (items.length === 1) {
 	    			repository.getDataById(nodeId, getInstanciateNode(items[0]['path'], callback));
@@ -219,11 +232,5 @@ function Workspace(session, data, callback) {
 	initWorkspace();
 }
 
-
 _.inherits(Workspace,nocr.Workspace);
-Workspace.prototype = {
-		getNodeTypeManager: function() {
-			return nodeTypeManager;
-		}
-};
 module.exports = Workspace;

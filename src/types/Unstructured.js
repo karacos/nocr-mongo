@@ -27,7 +27,7 @@ Base.extend({
 	'jcr:primaryItemName': 'jcr:data',
 	'jcr:propertyDefinition': 
 		[{ 
-			'jcr:name': '*',
+			'jcr:name': '.*', // Regexp  derivation
 			'jcr:autoCreated': false,
 			'jcr:mandatory': false,
 			'jcr:onParentVersion': "IGNORE",
@@ -38,7 +38,7 @@ Base.extend({
 			'jcr:isFullTextSearchable': false,
 			'jcr:isQueryOrderable': false
 		},{ 
-			'jcr:name': '*',
+			'jcr:name': '.*',
 			'jcr:autoCreated': false,
 			'jcr:mandatory': false,
 			'jcr:onParentVersion': "IGNORE",
@@ -51,7 +51,7 @@ Base.extend({
 		}],
 	'jcr:childNodeDefinition': 
 		[{
-			'jcr:name': '*',
+			'jcr:name': '.*',
 			'jcr:autoCreated': false,
 			'jcr:mandatory': false,
 			'jcr:onParentVersion': "IGNORE",

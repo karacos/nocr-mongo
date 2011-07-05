@@ -84,20 +84,27 @@ function Repository(config, callback) {
     	
     	function createRootNode() {
     		getItemsCollection(function(err, collection){
-	    		collection.insert({
-	    			'classType': 'Node',
-	    			'properties': {
-	    				'nt:primaryNodeType': 'nt:unstructured'
-	    			}
-	    			// path: abspath -- This is my repository root node
-	    		}, {safe: true}, function(err, result) {
-	    			if (err !== null) {
-	    				callback(err);
-	    			} else {
-	    				self.rootNode = result[0];
-	    				//console.log(self.rootNode);
-	    				callback(err, self.rootNode);
-	    			}
+    			collection.insert({
+    					'item:type': 'Property',
+    					'property:type':'NAME',
+    					'property:value': 'nt:unstructured'
+	    		}, {safe: true}, function(err, property) {
+	    			_.debug(_.inspect(property));
+		    		collection.insert({
+		    			'item:type': 'Node',
+		    			'node:type': 'nt:unstructured', //implementation specific shortcut to primaryNodeType property
+		    			'node:properties': {
+		    				'nt:primaryType': property[0]._id //specification compliant node property
+		    			}
+		    		}, {safe: true}, function(err, result) {
+		    			if (err !== null) {
+		    				callback(err);
+		    			} else {
+		    				self.rootNode = result[0];
+		    				//console.log(self.rootNode);
+		    				callback(err, self.rootNode);
+		    			}
+		    		});
 	    		});
     		});
     	}

@@ -15,9 +15,21 @@ function lookupType(itemData, callback) {
 				callback(err, node);
 			}
 		});
-	} else if ('about' in itemData) { // This is a property Item
+	} else if ('property:about' in itemData) { // This is a property Item
 		return new Property(itemData);
 	} else { // This is an error !!
 		return itemData;
 	}
 }
+
+exports.probePropertyType = function(value) {
+	
+};
+
+exports.valueCompatibility = {
+		'UNDEFINED': ['UNDEFINED','STRING', 'NAME','PATH','URI','BOOLEAN','NUMBER','DATE'],
+		'BOOLEAN': ['BOOLEAN'],
+		'STRING': ['STRING', 'NAME','PATH','URI'],
+		'NUMBER': ['NUMBER'],
+		'DATE': ['DATE']
+	};
