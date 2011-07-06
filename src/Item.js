@@ -1,5 +1,6 @@
 var nocr = require("NoCR"),
 	_ = require('util'),
+	log4js = require('log4js')(),
 	wrapper = require('./wrapper.js'),
 	assert = require('assert'),
 	Item, itemproto;
@@ -12,7 +13,7 @@ itemproto = {
 		}
 	};
 function Item(data, session) {
-	var k;
+	var k, self = this;
 	assert.ok((session instanceof nocr.Session), "Missing argument, session is not specified");
 	this.getPath = function() {
 		return this.data.path;
@@ -26,6 +27,7 @@ function Item(data, session) {
 		this.isnew = true;
 		this.ismodified = true;
 	}
+	self.logger = log4js.getLogger("nocr-mongo.Workspace." + data._id);
 	//_.debug(_.inspect(session));
 	//_.debug(_.inspect(nocr.Session));
 	for (k in itemproto) {

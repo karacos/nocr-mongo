@@ -1,12 +1,13 @@
 var Repository = require('../src/Repository.js'),
 	nocr = require("NoCR"),
 	vows = require('vows'),
+	log4js = require('log4js')(),
 	assert = require('assert'),
 	testSuite, testrepository,
 	_ = require('util')
 	// This is the coffee test compiled in js
 	,nocrTests = nocr.test.ImplTest;
-
+log4js.configure('./conf/log4js.json');
 testSuite = vows.describe('KaraCos Nu-Q test Suite');
 testSuite.addBatch({
 	"Clearing Database": {

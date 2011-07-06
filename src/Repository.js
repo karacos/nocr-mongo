@@ -1,5 +1,6 @@
 var nocr = require("NoCR"),
 	_ = require('util'),
+	log4js = require('log4js')(),
 	wrapper = require('./wrapper.js'),
 	Session = require('./Session.js'),
 	Node = require('./Node.js'),
@@ -66,11 +67,11 @@ function Repository(config, callback) {
     this.drop = function(callback) {
     	self.client.dropDatabase(function(err, done) {
     		if (err !== null) {
-    			_.debug('fail removing database');
+    			self.logger.debug('fail removing database');
     			callback(err,done);
     		} else {
     			console.log(done);
-    			_.debug('database removed successfully');
+    			self.logger.debug('database removed successfully');
     			self.client.close();
     			callback(null,"Database drop command successful, repository deleted");
     		}
@@ -89,7 +90,7 @@ function Repository(config, callback) {
     					'property:type':'NAME',
     					'property:value': 'nt:unstructured'
 	    		}, {safe: true}, function(err, property) {
-	    			_.debug(_.inspect(property));
+	    			self.logger.debug(_.inspect(property));
 		    		collection.insert({
 		    			'item:type': 'Node',
 		    			'node:type': 'nt:unstructured', //implementation specific shortcut to primaryNodeType property
@@ -127,10 +128,11 @@ function Repository(config, callback) {
     		objectId = dataId;
     	}
     	
-    	_.debug("Searching for id : " + objectId);
+    	self.logger.debug("Searching for id : " + objectId);
     	getItemsCollection(function(err, itemsCollection){
     		itemsCollection.find({"_id":objectId}).limit(1).toArray(function(err, item){
-    			_.debug("Search for id : " + objectId + " found data :" + _.inspect(item[0]));
+    			self.logger.debug("Search for id : " + objectId);
+    			self.logger.trace(" found data :" + _.inspect(item[0]));
     			callback(err, item[0]);
     		});
 
@@ -141,13 +143,13 @@ function Repository(config, callback) {
     wrapper.getClient(config.db, function(err, client){
     	if (err === null) {
     		self.client = client;
-    		//console.log(self);
     		callback(null, self);
     	} else {
-    		_.error(err);
+    		self.logger.error(err);
     		callback(err);
     	}
     });
+    self.logger = log4js.getLogger("nocr-mongo.Repository." + config.db.dbname);
 }
 
 Repository.prototype = {

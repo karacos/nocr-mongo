@@ -1,26 +1,31 @@
 var nocr = require("NoCR"),
 	_ = require('util'),
 	assert = require('assert'),
+	log4js = require('log4js')(),
 	wrapper = require('./wrapper.js'),
 	Item = require('./Item.js'),
 	itemslookup = require('./utils/itemslookup.js'),
 	Node, nodeproto,
 	Property = require('./Property.js'),
+	nodeTypeManager = require('./types/nodeTypeManager.js'),
 	Value = require('./Value.js');
 
 /**
-
  * @param data
  */
 nodeproto = {
 	getIdentifier: function() {
 		return this.data._id.toString();
 	},
+	/**
+	 * Can accept callback func or not, as operations are performed in-memory, there is no async
+	 */
 	getProperty: function(name, callback) {
 		var self = this, errmsg;
 		if (name in self['properties']) {
-			_.debug('[getProperty]: found in instances');
+			_.debug('[getProperty]: found in instances'); // memory cache L1
 			if (typeof callback !== "undefined") {
+				//_.debug(_.inspect(self['properties'][name]));
 				callback(null, self['properties'][name]);
 			} else {
 				return self['properties'][name];
@@ -45,9 +50,12 @@ nodeproto = {
 			}
 		}
 	},
+	/**
+	 * Can accept callback func or not, as operations are performed in-memory, there is no async
+	 */
 	setProperty: function(name, value, type, callback) {
 		//_.debug("[setProperty]: " + _.inspect(arguments));
-		var self = this, type,error;
+		var self = this, type,error, prop;
 		if (arguments.length === 0) {
 			throw new Error("at least name should be specified");
 		}
@@ -63,6 +71,9 @@ nodeproto = {
 				type = undefined;
 			}
 		}
+		if (callback === undefined ) {
+			callback = function(){};
+		}
 		//
 		// TODO: ACL check for writing
 		//
@@ -73,28 +84,30 @@ nodeproto = {
 			}
 			if (self.type.canSetProperty(name, value)) {
 				self.ismodified = true;
+				//_.debug(_.inspect(self));
 				if (name in self['node:properties'] || name in self['properties']) { //such property already exist ethier persisted or in session scope
 					self.getProperty(name, function(err, prop) {//gets the property instance and sets the value
 						if (err === null) {
-							if (callback !== undefined ) {
-								callback(err);
-							}
+							callback(err);
 						} else {
 							prop.setValue(value); 
-							if (callback !== undefined ) {
 								callback(null, prop);
-							}
 						}
 					});
 				} else { // probe property type and create new property
-					self['properties'][name] = new Property(value, self.session);
-					if (callback !== undefined ) {
-						callback(null, self['properties'][name]);
-					}
+					prop = new Property(value, self.session);
+					prop['data']['path'] = self.getPath() + name; //Node names always ends with /
+					//_.debug("Session scope property object " + _.inspect(prop));
+					
+					// node local cache name reference
+					self['properties'][name] = prop;
+					
+					// Session cache reference and path index
+					self.session.items.setItem(prop['data']['path'], prop, callback);
 				}
 			} else { // property can't be set
 				error = "Integrity error, can't set such propertie at such value";
-				if (callback !== undefined ) {
+				if (callback !== function(){} ) {
 					callback(error);
 				} else {
 					throw new Error();
@@ -115,36 +128,130 @@ nodeproto = {
 				delete self['properties'][name];
 				self.ismodified = true;
 			}  // deleting a nonexitent property have no effect
-			if (callback !== undefined ) {
 				callback(null,undefined);
-			}
 		}
 	}, // Node.setPropertypropertytest
-	addNode: function(path, typename) {
-		var self = this;
-		if (self.type.canAddChildNode(path,typename)) {
-			
+	/**
+	 * 
+	 */
+	addNode: function(path, typename, callback) {
+		var self = this,
+			data,
+			node,
+			parent,
+			pathcheck = path.split('/'), pchecklen, pchkid,
+			pabspath; // supposed parent relative path (if not self)
+		/**
+		 * Throws an error if either no child type is applicable or
+		 * more than on type match.
+		 */
+		function guessChildType(parent, path) {
+			var childNodesDef = parent.type.getChildNodeDefinitions(),
+				childTypeNames = [];
+			childNodesDef.forEach(function(propdef) {
+				var 
+					restr = "^" + propdef['jcr:name'] + "$",
+				re = new RegExp(restr);
+				if (re.test(childName)) {
+					propdef['jcr:requiredPrimaryTypes'].forEach(function(typename, i) {
+						if (!nodeTypeManager.getNodeType(typename).isAbstract()) {
+							childTypeName.push(typename);
+						}
+					});
+				}
+			});
+			if (childTypeNames.length === 1) {
+				return childTypeNames[0];
+			} else {
+				throw new Error("Definiton problem, childNode type cannot be determined");
+			}
+		} //   ---------------------- /function --------------------
+		
+		function processAddNode(childName, parent) {
+			if (parent.type.canAddChildNode(path,typename)) {
+				if (typename === undefined) {
+					typename = guessChildType(path);
+				}
+				node = new Node({
+						'path': parent.getPath() + childName + '/', // Implementation data, Index
+						'node:type': 'nt:unstructured' // implementation reference
+					}, self.session);
+				//_.debug(_.inspect(node));
+				
+				// parent node by name index
+				parent['childrens'][childName] = node;
+				// Session cache reference and path index
+				parent.session.items.setItem(node['data']['path'], node, callback);
+				node.setProperty('nt:primaryType', // Setting this default property which will be required all times
+						new Value({
+							'property:value':typename,
+							'property:type': 'NAME'
+						})
+					);
+				//_.debug(_.inspect(node));
+			} else {
+				throw new Error("Integrity problem, Operation addNode can't be performed");
+			}
+		} //   ---------------------- /function --------------------
+		
+		pchecklen = pathcheck.length; 
+		if (pchecklen === 0){
+			throw new Error("Invalid path");
+		} else if (pchecklen === 1) {
+			processAddNode(pathcheck[0], self);
 		} else {
-			throw new Error("Operation addNode can't be performed");
+			
+			pabspath = "";
+			for (pcheckid = 0; pchkid++ < pchecklen -1; pcheckid++) {
+				pabspath = pabspath  + pathcheck[pcheckid] + '/';
+			}
+			self.getNode(pabspath, function(err, node) {
+				if (err !== null) {
+					callback(err);
+				} else {
+					processAddNode(pathcheck[pchecklen -1], node);
+				}
+			});
 		}
+	},
+	getNode: function(path, callback) {
+		var pabspath,
+			self = this;
+		pabspath = self.getPath() + path;
+		if (pabspath[pabspath.length-1] !== "/") {
+			pabspath = pabspath + "/";
+		}
+		self.session.getNode(pabspath, function(err, node) {
+			self.logger.trace("Item at " + pabspath + ' : ' + _.inspect(node));
+			if (err !== null) {
+				self.logger.error(err);
+				callback(err);
+			}else {
+				if (node instanceof nocr.Node) {
+					callback(err, node);
+				} else {
+					callback("Invalid parent found");
+				}
+			}
+		});
+
 	}
 };
 function Node(data, session) {
 	var self = this,
 		workspace = session.getWorkspace();
-	Item.call(self, data, session);
 	//_.debug("Initializing Node :" + _.inspect(data));
 	self['properties'] = {}; // data structure for properties instance (lazy load)
 	self['childrens'] = {}; //data structure for nodes instances (lazy load)
-	if (!'node:properties' in data) {
+	if (!'node:properties' in data || data['node:properties'] === undefined) {
 		data['node:properties'] = {}; //data reference map
 	}
-	if (!'node:childrens' in data) {
+	if (!'node:childrens' in data || data['node:childrens'] === undefined) {
 		data['node:childrens'] = {};
 	}
-	
 	self['node:properties'] = data['node:properties'];
 	self['node:childrens'] = data['node:childrens'];
+	Item.call(self, data, session);
 	if (data['node:properties:' + workspace.getName()] !== undefined) {
 		for (k in data['node:properties:' + workspace.getName()]) {
 			self['node:properties'][k] = data['node:properties:' + workspace.getName()][k];

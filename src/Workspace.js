@@ -1,5 +1,6 @@
 var nocr = require("NoCR"),
 	_ = require('util'),
+	log4js = require('log4js')(),
 	wrapper = require('./wrapper.js'),
 	Node = require('./Node.js'),
 	Workspace, populateWorkspace, wsproto;
@@ -28,6 +29,7 @@ function Workspace(session, data, callback) {
 			data = {name: 'default'};
 		}
 		self.name = data.name;
+		self.logger = log4js.getLogger("nocr-mongo.Workspace." + self.name);
 		self.session = session;
 		callback(null, self);
 		for (k in wsproto) {
@@ -87,7 +89,7 @@ function Workspace(session, data, callback) {
 	function populateWorkspace(itemsIndex, callback) {
 		function indexRootNode(err, rootNodeData) {
 			var rootNode = new Node(rootNodeData, session);
-			_.debug("Indexing rootNode");
+			self.logger.debug("Indexing rootNode");
 			//_.log(_.inspect(rootNode));
 			itemsIndex.insert({
 				'item:id': rootNode.data._id.toString(),
@@ -109,74 +111,100 @@ function Workspace(session, data, callback) {
 	}
 	/**
 	 * Cache object for nodes instances
-	//TODO: this is a raw in-memory cache.
+	//TODO: this is a raw in-memory cache. for current session
 	// It may use some library dependency and/or allow a shared cache (if it make sense ?).
 	// anyway, it can be overridden by top-level caller for the most flexible use.
 	 */
-	self.nodes = {
+	session.items = {
 			data: {},
+			setItem: function(abspath, item, callback) {
+				this.data[item.getPath()] = item;
+				if (typeof callback === "function")
+					callback(null, item);
+			},
+			getItem: function(abspath,callback) {
+				self.logger.debug("getting " + abspath);
+				//self.logger.trace(_.inspect(this.data));
+				if (abspath in this.data && this.data[abspath] !== undefined) {
+					callback(null, this.data[abspath]);
+				} else {
+					callback("Item not found in cache");
+				}
+			}
+	};
+	self.nodes = {
 			setNode: function(abspath, node, callback) {
-				this.data[node.getPath()] = node;
-				callback(null, node);
+				session.items.setItem(node.getPath(), node,callback);
 			},
 			getNode: function(abspath,callback) {
-				callback(null, this.data[abspath]);
+				session.items.getItem(abspath, callback);
 			}
 		};
 	self.properties = {
-			data: {},
 			setProperty: function(abspath, property, callback) {
-				this.data[property.getPath()] = property;
-				callback(null, node);
+				session.items.setItem(property.getPath(),callback);
 			},
 			getProperty: function(abspath,callback) {
-				callback(null, this.data[abspath]);
+				session.items.getItem(abspath, callback);
 			}
 		};
+	// Defining session access methods here..
 	session.getItem = function(abspath,callback) {
-		getItemsIndex(function(err, itemsIndex){
-			itemsIndex.find({'item:path': abspath}).toArray(function(err, items){
-				if (err !== null) {
-					callback(err);
-				}
-				if (items.length === 1) {
-					_.debug('Found Index : ' + _.inspect(items[0]));
-					if (items[0]['item:type'] === 'Node') {
-						self.nodes.getNode(abspath, function(err, node) {
-							if (node !== undefined) {
-								callback(null,node);
-							} else {
-								repository.getDataById(items[0]['item:id'], getInstanciateNode(abspath, callback));
+		session.items.getItem(abspath, function(err, item) {
+			if (item !== undefined) {
+				callback(err, item);
+			} else {
+				getItemsIndex(function(err, itemsIndex){
+					itemsIndex.find({'item:path': abspath}).toArray(function(err, items){
+						if (err !== null) {
+							callback(err);
+						}
+						if (items.length === 1) {
+							self.logger.debug('Found Index : ' + _.inspect(items[0]));
+							if (items[0]['item:type'] === 'Node') {
+								self.nodes.getNode(abspath, function(err, node) {
+									if (node !== undefined) {
+										callback(null,node);
+									} else {
+										repository.getDataById(items[0]['item:id'], getInstanciateNode(abspath, callback));
+									}
+								});
+							} else if (items[0]['item:type'] === 'Property') { // This is an Property
+								self.properties.getProperty(abspath, function(err, property) {
+									if (property !== undefined) {
+										callback(null,property);
+									} else {
+										repository.getDataById(items[0]['item:id'], getInstanciateProperty(abspath, callback));
+									}
+								});
 							}
-						});
-					} else if (items[0]['item:type'] === 'Property') { // This is an Property
-						self.properties.getProperty(abspath, function(err, property) {
-							if (property !== undefined) {
-								callback(null,property);
-							} else {
-								repository.getDataById(items[0]['item:id'], getInstanciateProperty(abspath, callback));
-							}
-						});
-					}
-				} else if (items.length === 0) {
-					callback("No Item found at path " + abspath,undefined);
-				} else {
-					callback("More than one item with the same abspath");
-				}
-			});
+						} else if (items.length === 0) {
+							callback("No Item found at path " + abspath,undefined);
+						} else {
+							callback("More than one item with the same abspath");
+						}
+					});
+				});
+			}
 		});
 	};
 	session.itemExists = function(abspath, callback) {
-		getItemsIndex(function(err, itemsIndex){
-			itemsIndex.find({'item:path': abspath, 'item:type':'Node'}).toArray(function(err, items){
-				if (items.length === 1) {
-					callback(null, true);
-				} else if (items.length === 0) {
-					callback(null, false);
-				} else {
-					callback("Integrity problem");
-				}
-			});
+		session.items.getItem(abspath, function(err, item) {
+			if (item !== undefined) {
+				callback(null, true);
+			} else {
+				getItemsIndex(function(err, itemsIndex){
+					itemsIndex.find({'item:path': abspath, 'item:type':'Node'}).toArray(function(err, items){
+						if (items.length === 1) {
+							callback(null, true);
+						} else if (items.length === 0) {
+							callback(null, false);
+						} else {
+							callback("Integrity problem");
+						}
+					});
+				});
+			}
 		});
 	};
 	session.getNode = function(abspath,callback) {
@@ -190,7 +218,7 @@ function Workspace(session, data, callback) {
     						callback(err);
     					}
     					if (items.length === 1) {
-    						_.debug('Found Index : ' + _.inspect(items[0]));
+    						self.logger.debug('Found Index : ' + _.inspect(items[0]));
 							repository.getDataById(items[0]['item:id'], getInstanciateNode(abspath, callback));
     					} else if (items.length === 0) {
     						callback("No Node found at path " + abspath,undefined);
@@ -218,7 +246,7 @@ function Workspace(session, data, callback) {
     session.getNodeByIdentifier = function(nodeId, callback) {
     	getItemsIndex(function(err, itemsIndex){
 	    	itemsIndex.find({'item:id': nodeId, 'item:type': 'Node'}).toArray(function(err, items){
-	    		_.debug("found item :" + _.inspect(items));
+	    		self.logger.debug("found item :" + _.inspect(items));
 	    		if (items.length === 1) {
 	    			repository.getDataById(nodeId, getInstanciateNode(items[0]['path'], callback));
 				} else if (items.length === 0) {

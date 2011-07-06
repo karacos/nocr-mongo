@@ -1,0 +1,9 @@
+{    "appenders": [
+        {
+            "type": "console"
+        }
+    ],
+    "levels": {
+        "nocr-mongo.*":  "INFO"
+    }
+}

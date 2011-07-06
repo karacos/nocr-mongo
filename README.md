@@ -7,9 +7,10 @@ KaraCos-NoCR-MongoDB is a content repository implementing the  NoCR API, a JCR c
 ### Requirements
 
 * mongodb
+* log4js
 
 ```
-npm install mongodb
+npm install mongodb log4js
 ```
 
 ### Grab submodules

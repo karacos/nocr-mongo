@@ -1,5 +1,6 @@
 var nocr = require("NoCR"),
 	_ = require('util'),
+	log4js = require('log4js')(),
 	wrapper = require('./wrapper.js'),
 	Node = require('./Node.js'),
 	Workspace = require('./Workspace.js'),
@@ -27,6 +28,7 @@ Session = function(repository, credentials, callback) {
 			});
 	}
 	function setUserContext(){
+		self.logger = log4js.getLogger("nocr-mongo.Session." + self.user.username);
 		client.collection('repository.workspaces', function(err, collection) {
 			workspaces = collection;
 			workspaces.count(function(err, count) {
@@ -59,11 +61,12 @@ Session = function(repository, credentials, callback) {
 		if(err) {
 			callback(err, null);
 		} else if(user) {
-			_.debug("user found :" + _.inspect(users));
+			self.logger.debug("user found :" + _.inspect(users));
 			if (user.password === credentials.password) {
 				self.user = {username:user.username, id: user.userid, workspace:user.workspace};
 				setUserContext();
 			} else {
+				self.logger = log4js.getLogger("nocr-mongo.Session.INVALID");
 				callback("User not found in Domain");
 				
 			}
@@ -79,13 +82,13 @@ Session = function(repository, credentials, callback) {
 	 */
 	function validateAuth() {
 		if (credentials === null) {
-			_.debug('No credentials provided, providing anonymous user');
+			self.logger.debug('No credentials provided, providing anonymous user');
 			setAnonymous();
 			callback(null, self);
 		} else {
-			_.debug("credentials != null :" + _.inspect(credentials));
+			self.logger.debug("credentials != null :" + _.inspect(credentials));
 			if (credentials.username !== undefined || credentials.username !== null) {
-				_.debug("credentials provided :" + _.inspect(credentials));
+				self.logger.debug("credentials provided :" + _.inspect(credentials));
 				usersCollection.find({username: credentials.username}).limit(1).
 					toArray(checkUserAuth);
 			} else {
@@ -98,13 +101,14 @@ Session = function(repository, credentials, callback) {
 	 * session initialization
 	 */
 	function initSession() {
+		self.logger = log4js.getLogger("nocr-mongo.Session.INITIALIZE");
 		if (credentials === undefined) {credentials = null;}
 		self.repository = repository;
 		function processUsersCollection(err, collection) {
 			collection.count(function(err, count) {
 				usersCollection = collection;
 				if (count === 0) {
-					_.debug('No user found in db, creating defaults: anonymous and admin');
+					self.logger.debug('No user found in db, creating defaults: anonymous and admin');
 					collection.createIndex([['username', 1]], true, function(err, result) {
 						collection.save(
 								[{'username':'admin','password': 'demo', userid: 0,workspace:'admin'},

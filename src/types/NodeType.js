@@ -143,7 +143,7 @@ ntproto = {
 			return result;
 		},
 		getChildNodeDefinitions: function() {
-			
+			return self['data']['jcr:childNodeDefinition'];
 		},
 		getDeclaredSubtypes: function() {
 			
