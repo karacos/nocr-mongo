@@ -1,5 +1,7 @@
 var nocr = require("NoCR"),
 	_ = require('util'),
+	log4js = require('log4js')(),
+	logger = log4js.getLogger("nocr-mongo.Value"),
 	wrapper = require('./wrapper.js'),
 	Value, valueproto;
 
@@ -54,7 +56,7 @@ function Value(data) {
 	function checkIntegrity(data) {
 		var guess = guessType(data['property:value']),
 			compatibility = require('./utils/itemslookup.js').valueCompatibility;
-		_.debug("Checking types integrity : " + data['property:type'] + " vs " + guess);
+		logger.debug("Checking types integrity : " + data['property:type'] + " vs " + guess);
 		if (compatibility[guess].indexOf(data['property:type']) === -1 ) {
 			throw new Error("Incompatible type/value found");
 		}

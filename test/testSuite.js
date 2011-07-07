@@ -1,13 +1,13 @@
-var Repository = require('../src/Repository.js'),
+var 
+	log4js = require('log4js')().configure('./conf/log4js.json'),
+	Repository = require('../src/Repository.js'),
 	nocr = require("NoCR"),
 	vows = require('vows'),
-	log4js = require('log4js')(),
 	assert = require('assert'),
 	testSuite, testrepository,
 	_ = require('util')
 	// This is the coffee test compiled in js
 	,nocrTests = nocr.test.ImplTest;
-log4js.configure('./conf/log4js.json');
 testSuite = vows.describe('KaraCos Nu-Q test Suite');
 testSuite.addBatch({
 	"Clearing Database": {
@@ -61,9 +61,7 @@ testSuite.addBatch({
 			topic: function(){
 				nocrTests.getRepository().login({username: 'admin', password:'notdemo'}, "testWorkSpace",this.callback);
 			},
-			'Test result error' : function(err,session){
-				_.debug(_.inspect(err));
-				_.debug(typeof err);
+			'Test result error' : function(err,session) {
 				assert.ok(typeof err === 'string','Error must be a String');
 				assert.ok((session === null || session === undefined),'Session is not null');
 			}}}});

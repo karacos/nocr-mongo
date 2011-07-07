@@ -23,25 +23,26 @@ nodeproto = {
 	getProperty: function(name, callback) {
 		var self = this, errmsg;
 		if (name in self['properties']) {
-			_.debug('[getProperty]: found in instances'); // memory cache L1
+			self.logger.debug('[getProperty]: found in instances'); // memory cache L1
 			if (typeof callback !== "undefined") {
-				//_.debug(_.inspect(self['properties'][name]));
+				self.logger.trace(_.inspect(self['properties'][name]));
 				callback(null, self['properties'][name]);
 			} else {
 				return self['properties'][name];
 			}
 		} else if (name in self['node:properties']) {
-			_.debug('[getProperty]: found in data');
+			self.logger.debug('[getProperty]: found in data');
 			self.session.getRepository().getDataById(self['node:properties'][name],function(err, propData) {
 				self['properties'][name] = new Property(propData, self.session);
 				if (typeof callback !== "undefined") {
+					self.logger.trace(_.inspect(self['properties'][name]));
 					callback(null, self['properties'][name]);
 				} else {
 					return self['properties'][name];
 				}
 			});
 		} else {
-			_.debug('[getProperty]: not found');
+			self.logger.debug('[getProperty]: not found');
 			errmsg = "Property not found in node";
 			if (typeof callback !== "undefined") {
 				callback(errmsg);
@@ -54,8 +55,8 @@ nodeproto = {
 	 * Can accept callback func or not, as operations are performed in-memory, there is no async
 	 */
 	setProperty: function(name, value, type, callback) {
-		//_.debug("[setProperty]: " + _.inspect(arguments));
 		var self = this, type,error, prop;
+		self.logger.trace("[setProperty]: " + _.inspect(arguments));
 		if (arguments.length === 0) {
 			throw new Error("at least name should be specified");
 		}
@@ -84,7 +85,7 @@ nodeproto = {
 			}
 			if (self.type.canSetProperty(name, value)) {
 				self.ismodified = true;
-				//_.debug(_.inspect(self));
+				self.logger.trace(_.inspect(self));
 				if (name in self['node:properties'] || name in self['properties']) { //such property already exist ethier persisted or in session scope
 					self.getProperty(name, function(err, prop) {//gets the property instance and sets the value
 						if (err === null) {
@@ -114,16 +115,16 @@ nodeproto = {
 				}
 			}
 		} else { //deleting the property if null or no value specified
-			_.debug("value is not specified or null, removing  " + name + " property from registries");
+			self.logger.info("value is not specified or null, removing  " + name + " property from registries");
 			//_.debug(_.inspect(self['node:properties']));
 			if (name in self['node:properties']) {
-				_.debug("Property found in data, deleting");
+				self.logger.debug("Property found in data, deleting");
 				self['node:properties'][name] = undefined;
 				delete self['node:properties'][name];
 				self.ismodified = true;
 			}
 			if (name in self['properties']) {
-				_.debug("Property found in instances, deleting");
+				self.logger.debug("Property found in instances, deleting");
 				self['properties'][name] = undefined;
 				delete self['properties'][name];
 				self.ismodified = true;
@@ -176,7 +177,7 @@ nodeproto = {
 						'path': parent.getPath() + childName + '/', // Implementation data, Index
 						'node:type': 'nt:unstructured' // implementation reference
 					}, self.session);
-				//_.debug(_.inspect(node));
+				self.logger.trace(_.inspect(node));
 				
 				// parent node by name index
 				parent['childrens'][childName] = node;
@@ -188,7 +189,7 @@ nodeproto = {
 							'property:type': 'NAME'
 						})
 					);
-				//_.debug(_.inspect(node));
+				self.logger.trace(_.inspect(node));
 			} else {
 				throw new Error("Integrity problem, Operation addNode can't be performed");
 			}
@@ -240,7 +241,6 @@ nodeproto = {
 function Node(data, session) {
 	var self = this,
 		workspace = session.getWorkspace();
-	//_.debug("Initializing Node :" + _.inspect(data));
 	self['properties'] = {}; // data structure for properties instance (lazy load)
 	self['childrens'] = {}; //data structure for nodes instances (lazy load)
 	if (!'node:properties' in data || data['node:properties'] === undefined) {
@@ -252,6 +252,8 @@ function Node(data, session) {
 	self['node:properties'] = data['node:properties'];
 	self['node:childrens'] = data['node:childrens'];
 	Item.call(self, data, session);
+	self.logger.info("Initializing Node");
+	self.logger.trace(_.inspect(data));
 	if (data['node:properties:' + workspace.getName()] !== undefined) {
 		for (k in data['node:properties:' + workspace.getName()]) {
 			self['node:properties'][k] = data['node:properties:' + workspace.getName()][k];

@@ -1,5 +1,6 @@
 var nocr = require("NoCR"),
 	_ = require('util'),
+	log4js = require('log4js')(),
 	wrapper = require('./wrapper.js'),
 	Item = require('./Item.js'),
 	Value = require('./Value.js'),

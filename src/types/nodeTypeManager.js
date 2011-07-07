@@ -1,6 +1,8 @@
 //persist this (3.7.14)
 var typesMap = {},
 	_ = require('util'),
+	log4js = require('log4js')(),
+	logger = log4js.getLogger("nocr-mongo.nodeTypeManager"),
 //nodeTypeManager = function(){
 //	console.log("Creating node type manager");
 //};
@@ -48,7 +50,7 @@ nodeTypeManager = {
 				typesMap[type.data['jcr:nodeTypeName']]['typedef'] = type;
 				typesMap[type.data['jcr:nodeTypeName']]['allowupdate'] = allowupdate;
 			} else {
-				_.error(_.inspect(type));
+				logger.error(_.inspect(type));
 				throw new Error('Update is not allowed');
 			}
 		} else {
@@ -57,7 +59,7 @@ nodeTypeManager = {
 					'typedef': type
 			};
 		}
-		_.log("Registered node type [" + type.data['jcr:nodeTypeName'] + "]" );
+		logger.info("Registered node type [" + type.data['jcr:nodeTypeName'] + "]" );
 	},
 	registerNodeTypes: function registerNodeTypes(types, allowupdate, callback) {
 		

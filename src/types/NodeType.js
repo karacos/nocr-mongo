@@ -1,6 +1,7 @@
 
 var NodeType, ntproto,
 	nocr = require("NoCR"),
+	log4js = require('log4js')(),
 	nodeTypeManager = require('./nodeTypeManager.js'),
 	NodeTypeDefinition = require('./NodeTypeDefinition.js'),
 	assert = require('assert'),
@@ -9,6 +10,7 @@ var NodeType, ntproto,
 ntproto = {
 		constructor: function(data) {
 			this.assertMandatory(data);
+			this.logger = log4js.getLogger("nocr-mongo.NodeType." + data['jcr:nodeTypeName']);
 			if (!('jcr:childNodeDefinition' in data)) {
 				data['jcr:childNodeDefinition'] = [];
 			}
@@ -77,7 +79,7 @@ ntproto = {
 					}
 				}
 			}
-			//_.log(_.inspect(typedata));
+			this.logger.trace(_.inspect(typedata));
 			type = new NodeType(typedata);
 			type['data']['jcr:supertypes'].push(this['data']['jcr:nodeTypeName']);
 			type._super_ = this;

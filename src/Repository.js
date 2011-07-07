@@ -51,7 +51,7 @@ function Repository(config, callback) {
 			});
 		}
 	}
-	
+	this.getItemsCollection = getItemsCollection;
     this.login = function(credentials, workspaceName, callback) {
     	var 
     		session = new Session(self,credentials, function(err,sess) {

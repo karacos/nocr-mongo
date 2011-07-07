@@ -61,7 +61,8 @@ Session = function(repository, credentials, callback) {
 		if(err) {
 			callback(err, null);
 		} else if(user) {
-			self.logger.debug("user found :" + _.inspect(users));
+			self.logger.debug("user found");
+			self.logger.trace(_.inspect(users));
 			if (user.password === credentials.password) {
 				self.user = {username:user.username, id: user.userid, workspace:user.workspace};
 				setUserContext();
@@ -86,9 +87,11 @@ Session = function(repository, credentials, callback) {
 			setAnonymous();
 			callback(null, self);
 		} else {
-			self.logger.debug("credentials != null :" + _.inspect(credentials));
+			self.logger.debug("credentials != null :");
+			self.logger.trace(_.inspect(credentials));
 			if (credentials.username !== undefined || credentials.username !== null) {
-				self.logger.debug("credentials provided :" + _.inspect(credentials));
+				self.logger.debug("credentials provided :");
+				self.logger.trace(_.inspect(credentials));
 				usersCollection.find({username: credentials.username}).limit(1).
 					toArray(checkUserAuth);
 			} else {
