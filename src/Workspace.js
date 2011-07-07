@@ -270,7 +270,8 @@ function Workspace(session, data, callback) {
     session.save = function(callback) {
     	var 
     		modifiedNodes = [],
-    		newNodes = [];
+    		newNodes = [],
+    		indexdata = [];
     	if (callback === undefined) { // Default callback throws an exception
     		callback = function(err,res) {
     			if (err !== null) {
@@ -284,11 +285,6 @@ function Workspace(session, data, callback) {
     		} else if (session.items.data[path] instanceof nocr.Node && session.items.data[path].ismodified) {
     			modifiedNodes.push(session.items.data[path]);
     		}
-    	}
-    	
-    	
-    	function updateIndex(callback) {
-    		
     	}
     	repository.getItemsCollection(function(err, itemsCollection) {
     		/**
@@ -326,10 +322,16 @@ function Workspace(session, data, callback) {
 							if (err !== null) {
 								callback(err);
 							} else {
-								propsmap[propkey].data['_id'] = pdata._id;
+								self.logger.debug(_.inspect(pdata));
+								propsmap[propkey].data['_id'] = pdata[0]._id;
 								propsmap[propkey].isnew = false;
 								propsmap[propkey].isModified = false;
-								node['node:properties'][propkey] = pdata._id;
+								node['node:properties'][propkey] = pdata[0]._id;
+								indexdata.push({
+    								'item:path': node.getPath() + propkey,
+    								'item:id': pdata[0]._id,
+    								'item:type': 'Property'
+    							});
 								self.logger.debug('Inserting property - ' + (insertedprops++) + "/" + propscount);
 								if (insertedprops === propscount) {
 									callback(err, node);
@@ -364,12 +366,16 @@ function Workspace(session, data, callback) {
 						}
 						propdata['item:type'] = 'Property';
 						itemsCollection.update({"_id":propdata['_id']}, propdata,{safe:true},function(err, pdata){
-							propsmap[propkey].data['_id'] = pdata._id;
-							propsmap[propkey].isnew = false;
-							propsmap[propkey].isModified = false;
-							node['node:properties'][propkey] = pdata._id;
-							if (++insertedprops === propscount) {
-								callback(err, node);
+							if (err !== null) {
+								callback(err);
+							} else {
+								propsmap[propkey].data['_id'] = pdata._id;
+								propsmap[propkey].isnew = false;
+								propsmap[propkey].isModified = false;
+								node['node:properties'][propkey] = pdata._id;
+								if (++insertedprops === propscount) {
+									callback(err, node);
+								}
 							}
 						});
 					}
@@ -378,34 +384,43 @@ function Workspace(session, data, callback) {
 	    	/**
 	    	 * 
 	    	 */
+    		function insertNode(node, callback) { // insert a Node and its properties
+    			insertNodeProperties(node, function(err, node) {
+    				if (err !== null) {
+    					callback(err);
+    				} else {
+    					var nodeData = {}, k;
+    					for (k in node.data) {
+    						if (k !== 'path') {
+    							nodeData[k] = node.data[k];
+    						}
+    					}
+    					nodeData['node:properties:' + self.getName()] = node['node:properties'];
+    					nodeData['node:childrens:' + self.getName()] = node['node:childrens'];
+    					nodeData['item:type'] = 'Node';
+    					self.logger.debug("Inserting node");
+    					self.logger.trace(_.inspect(nodeData));
+    					itemsCollection.insert(nodeData,{safe:true}, function(err, ndata) {
+    						if (err !== null) {
+    							callback(err);
+    						} else {
+    							self.logger.debug("Inserted node : " + node.getPath());
+        						node['data']['_id'] = ndata[0]._id;
+        						node.isnew = false;
+        						node.isModified = false;
+    							indexdata.push({
+    								'item:path': node.getPath(),
+    								'item:id': ndata[0]._id,
+    								'item:type': 'Node'
+    							});
+    						callback(err, ndata);
+    						}
+						});
+					}
+				});
+    		}
 	    	function insertNodes(callback) {
 	    		var insertedNodesCount = 0, node, propertyName, properties = [];
-	    		function insertNode(node, callback) { // insert a Node and its properties
-	    			insertNodeProperties(node, function(err, node) {
-	    				if (err !== null) {
-	    					callback(err);
-	    				} else {
-	    					var nodeData = {}, k;
-	    					for (k in node.data) {
-	    						if (k !== 'path') {
-	    							nodeData[k] = node.data[k];
-	    						}
-	    					}
-	    					nodeData['node:properties:' + self.getName()] = node['node:properties'];
-	    					nodeData['node:childrens:' + self.getName()] = node['node:childrens'];
-	    					nodeData['item:type'] = 'Node';
-	    					self.logger.debug("Inserting node");
-	    					self.logger.debug(_.inspect(nodeData));
-	    					itemsCollection.insert(nodeData,{safe:true},function(err, ndata){
-	    						self.logger.debug("Inserted node : " + node.path);
-	    						node['data']['_id'] = ndata._id;
-	    						node.isnew = false;
-	    						node.isModified = false;
-	    						callback(err,node);
-	    					});
-	    				}
-	    			});
-	    		}
 	    		if (newNodes.length === 0) {
 	    			self.logger.debug("No nodes to insert");
 	    			callback(null, {'message': "No nodes to insert",
@@ -413,17 +428,20 @@ function Workspace(session, data, callback) {
 	    		} else {
     	    		newNodes.forEach(function(node, nk) {
     	    			self.logger.debug("start inserting node " + nk);
-        				insertNode(node, function(err, node) {
-        					self.logger.trace(_.inspect(err));
-        					self.logger.debug("insertedNodesCount " + (++insertedNodesCount) + "/" + newNodes.length);
-        					if (insertedNodesCount === newNodes.length) {
-        						callback(err, {'message': "Nodes inserted",
-	    							"createdNodes": newNodes.length});
+        				insertNode(node, function(err, ndata){
+        					if (err !== null) {
+        						callback(err);
+        					} else {
+        						self.logger.trace(_.inspect(err));
+        						self.logger.debug("insertedNodesCount " + (++insertedNodesCount) + "/" + newNodes.length);
+        						if (insertedNodesCount === newNodes.length) {
+        							callback(err, {'message': "Nodes inserted",
+        								"createdNodes": newNodes.length});
+        						}
         					}
         				});
         			});
 	    		}
-	
 	    	} // ------------------------------ /function InsertNodes
 	    	function updateNodes(callback) {
 	    		var updatedNodescount = 0, node, propertyName, properties = [];
@@ -431,7 +449,7 @@ function Workspace(session, data, callback) {
 	    			insertNodeProperties(node, function(err, node) {
 	    				if (err !== null) {
 	    					self.logger.error("Error inserting properties");
-	    					self.logger.error(_.inspect(err));
+	    					self.logger.trace(_.inspect(err));
 	    					callback(err);
 	    				} else {
 	    					updateNodeProperties(node, function(err, node) {
@@ -488,8 +506,11 @@ function Workspace(session, data, callback) {
         			});
 	    		}
 	    	} //------------------------------ /function updateNodes
+	    	function updateIndex(callback) {
+	    		
+	    	}//------------------------------ /function updateIndex
 	    	
-	    	// process Node
+	    	// process save
 	    	insertNodes(function(err, insertRes) {
 	    		if (err === null) {
 	    			updateNodes(function(err, updateRes) {
@@ -500,6 +521,7 @@ function Workspace(session, data, callback) {
 	    							"updatedNodes": updateRes['updatedNodes']
 	    					};
 	    					self.logger.debug(_.inspect(result));
+	    					self.logger.debug(_.inspect(indexdata));
 	    					callback(null, result);
 	    				} else {
 	    					callback(err);

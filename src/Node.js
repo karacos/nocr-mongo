@@ -178,7 +178,7 @@ nodeproto = {
 						'node:type': 'nt:unstructured' // implementation reference
 					}, self.session);
 				self.logger.trace(_.inspect(node));
-				
+				parent.ismodified = true;
 				// parent node by name index
 				parent['childrens'][childName] = node;
 				// Session cache reference and path index
@@ -203,7 +203,7 @@ nodeproto = {
 		} else {
 			
 			pabspath = "";
-			for (pcheckid = 0; pchkid++ < pchecklen -1; pcheckid++) {
+			for (pcheckid = 0; pcheckid < pchecklen -1; pcheckid++) {
 				pabspath = pabspath  + pathcheck[pcheckid] + '/';
 			}
 			self.getNode(pabspath, function(err, node) {
