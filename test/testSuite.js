@@ -85,7 +85,7 @@ testSuite.addBatch({
 // add the tests from NoCR API
 //
 nocrTests.addNoCRBatch(testSuite);
-
+/*
 testSuite.addBatch({
 	"[Karacos] Cleanup": {
 		topic: function() {
@@ -99,5 +99,5 @@ testSuite.addBatch({
 			assert.ok(err === null,"Error while deleting repository");
 		}
 	}
-});
+}); */
 exports.testSuite = testSuite;
