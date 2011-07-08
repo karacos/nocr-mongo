@@ -7,7 +7,9 @@ var
 	testSuite, testrepository,
 	_ = require('util')
 	// This is the coffee test compiled in js
-	,nocrTests = nocr.test.ImplTest;
+	,nocrTests = nocr.test.ImplTest,
+	credentials = {username: 'admin', password:'demo'};
+nocrTests.setCredentials(credentials);
 testSuite = vows.describe('KaraCos Nu-Q test Suite');
 testSuite.addBatch({
 	"Clearing Database": {
@@ -47,7 +49,7 @@ testSuite.addBatch({
 		},
 		'Testing admin default login': {
 			topic: function(){
-				nocrTests.getRepository().login({username: 'admin', password:'demo'}, "testWorkSpace",this.callback);
+				nocrTests.getRepository().login(credentials, "testWorkSpace",this.callback);
 			},
 			'Test Session object' : function(err,session){
 				assert.ok((session instanceof nocr.Session),'Session is not a session object');

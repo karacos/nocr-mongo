@@ -23,42 +23,37 @@ nodeproto = {
 	getProperty: function(name, callback) {
 		var self = this, errmsg;
 		self.session.getItem(self.getPath() + name, function(err,item) {
-			if (err !== null) {
-				callback(err);
+			if (item instanceof nocr.Property) {
+				callback(null, item);
 			} else {
-				if (item instanceof nocr.Property) {
-					callback(null, item);
-				} else {
-					if (name in self['properties']) {
-						self.logger.debug('[getProperty]: found in instances'); // memory cache L1
+				if (name in self['properties']) {
+					self.logger.debug('[getProperty]: found in instances'); // memory cache L1
+					if (typeof callback !== "undefined") {
+						self.logger.trace(_.inspect(self['properties'][name]));
+						callback(null, self['properties'][name]);
+					} else {
+						return self['properties'][name];
+					}
+				} else if (name in self['node:properties']) {
+					self.logger.debug('[getProperty]: found in data');
+					self.session.getRepository().getDataById(self['node:properties'][name],function(err, propData) {
+						self['properties'][name] = new Property(propData, self.session);
 						if (typeof callback !== "undefined") {
 							self.logger.trace(_.inspect(self['properties'][name]));
 							callback(null, self['properties'][name]);
 						} else {
 							return self['properties'][name];
 						}
-					} else if (name in self['node:properties']) {
-						self.logger.debug('[getProperty]: found in data');
-						self.session.getRepository().getDataById(self['node:properties'][name],function(err, propData) {
-							self['properties'][name] = new Property(propData, self.session);
-							if (typeof callback !== "undefined") {
-								self.logger.trace(_.inspect(self['properties'][name]));
-								callback(null, self['properties'][name]);
-							} else {
-								return self['properties'][name];
-							}
-						});
+					});
+				} else {
+					self.logger.debug('[getProperty]: not found');
+					errmsg = "Property not found in node";
+					if (typeof callback !== "undefined") {
+						callback(errmsg);
 					} else {
-						self.logger.debug('[getProperty]: not found');
-						errmsg = "Property not found in node";
-						if (typeof callback !== "undefined") {
-							callback(errmsg);
-						} else {
-							throw new Error(errmsg);
-						}
+						throw new Error(errmsg);
 					}
 				}
-				
 			}
 		});
 	},
