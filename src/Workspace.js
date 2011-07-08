@@ -32,6 +32,7 @@ function Workspace(session, data, callback) {
 		self.id = data['_id'];
 		self.logger = log4js.getLogger("nocr-mongo.Workspace");
 		self.session = session;
+		self.indexdata = [];
 		callback(null, self);
 		for (k in wsproto) {
 			self[k] = wsproto[k];
@@ -270,8 +271,7 @@ function Workspace(session, data, callback) {
     session.save = function(callback) {
     	var 
     		modifiedNodes = [],
-    		newNodes = [],
-    		indexdata = [];
+    		newNodes = [];
     	if (callback === undefined) { // Default callback throws an exception
     		callback = function(err,res) {
     			if (err !== null) {
@@ -298,7 +298,8 @@ function Workspace(session, data, callback) {
 					propkey;
 				self.logger.debug("start inserting node properties");
 				self.logger.trace(_.inspect(node));
-				Object.keys(node['properties']).forEach(function(index) { //iterate over each node property
+				Object.keys(node['properties']).forEach(function(index) {
+					//iterate over each node property
 					var property = node['properties'][index];
 					if (property.isnew) {
 						propsmap[index] = node['properties'][index];
@@ -327,7 +328,7 @@ function Workspace(session, data, callback) {
 								propsmap[propkey].isnew = false;
 								propsmap[propkey].isModified = false;
 								node['node:properties'][propkey] = pdata[0]._id;
-								indexdata.push({
+								self.indexdata.push({
     								'item:path': node.getPath() + propkey,
     								'item:id': pdata[0]._id,
     								'item:type': 'Property'
@@ -408,7 +409,7 @@ function Workspace(session, data, callback) {
         						node['data']['_id'] = ndata[0]._id;
         						node.isnew = false;
         						node.isModified = false;
-    							indexdata.push({
+    							self.indexdata.push({
     								'item:path': node.getPath(),
     								'item:id': ndata[0]._id,
     								'item:type': 'Node'
@@ -419,6 +420,9 @@ function Workspace(session, data, callback) {
 					}
 				});
     		}
+    		/**
+    		 * 
+    		 */
 	    	function insertNodes(callback) {
 	    		var insertedNodesCount = 0, node, propertyName, properties = [];
 	    		if (newNodes.length === 0) {
@@ -433,7 +437,8 @@ function Workspace(session, data, callback) {
         						callback(err);
         					} else {
         						self.logger.trace(_.inspect(err));
-        						self.logger.debug("insertedNodesCount " + (++insertedNodesCount) + "/" + newNodes.length);
+        						++insertedNodesCount;
+        						self.logger.debug("insertedNodesCount " + (insertedNodesCount) + "/" + newNodes.length);
         						if (insertedNodesCount === newNodes.length) {
         							callback(err, {'message': "Nodes inserted",
         								"createdNodes": newNodes.length});
@@ -443,6 +448,9 @@ function Workspace(session, data, callback) {
         			});
 	    		}
 	    	} // ------------------------------ /function InsertNodes
+	    	/**
+	    	 * 
+	    	 */
 	    	function updateNodes(callback) {
 	    		var updatedNodescount = 0, node, propertyName, properties = [];
 	    		function updateNode(node, callback) { // insert a Node and its properties
@@ -485,6 +493,7 @@ function Workspace(session, data, callback) {
 	    				}
 	    			});
 	    		} // ------------------------------ /function updateNode
+	    		// process updateNodes
 	    		self.logger.debug(modifiedNodes.length + " Nodes to update");
 	    		if (modifiedNodes.length === 0) {
 	    			callback(null,{'message': "No nodes to update",
@@ -496,7 +505,8 @@ function Workspace(session, data, callback) {
         					if (err !== null) {
         						callback(err);
         					} else {
-        						self.logger.debug('Updated node - ' + (++updatedNodescount) + "/" + modifiedNodes.length);
+        						++updatedNodescount;
+        						self.logger.debug('Updated node - ' + (updatedNodescount) + "/" + modifiedNodes.length);
         						if (updatedNodescount === modifiedNodes.length) {
         							callback(err, {'message': "Nodes updated",
         								"updatedNodes": updatedNodescount});
@@ -506,8 +516,97 @@ function Workspace(session, data, callback) {
         			});
 	    		}
 	    	} //------------------------------ /function updateNodes
-	    	function updateIndex(callback) {
-	    		
+	    	/**
+	    	 * Update workspace index data
+	    	 */
+	    	function updateItemsIndex(callback) {
+	    		var updatelength = self.indexdata.length,
+	    		updatecount=0;
+	    		if (updatelength === 0) {
+	    			callback(null, {'message':"No index to update",
+	    							'indexModificationCount': updatecount});
+	    		}
+	    		self.indexdata.forEach(function(itemindex, count) {
+	    			getItemsIndex(function(err, itemsIndex) {
+	    				itemsIndex.find({'item:path': itemindex['item:path']},function(err, cursor) {
+	    					if (err !== null) {
+	    						callback(err);
+	    						throw new Error(err);
+	    					} else {
+	    						cursor.count(function(err, count) {
+	    							//case 1 : a newly created index
+	    							if (count === 0 && itemindex['item:id'] !== undefined) {
+	    								itemsIndex.insert(itemindex, {safe:true},function(err, idxdata){
+	    									if (err !== null) {
+	    										callback(err);
+	    										throw new Error(err);
+	    									} else {
+	    										++updatecount;
+	    										self.logger.debug("updatedIndexData " + (updatecount) + "/" + self.indexdata.length);
+	    										if (updatecount === updatelength) {
+	    											callback(null, {
+	    												'message':"Index update successful",
+	    												'indexModificationCount': updatecount
+	    											});
+	    										}
+	    									}
+	    								});
+	    							} // if count === 0 && itemindex['item:id'] !== undefined
+	    							// case 2 : created then deleted an index during session, do nothing
+	    							else if (count === 0 && itemindex['item:id'] === undefined) {
+	    								++updatecount;
+	    								if (updatecount === updatelength) {
+											callback(null, {
+												'message':"Index update successful",
+												'indexModificationCount': updatecount
+											});
+										}
+	    							} // else if (count === 0 && itemindex['item:id'] === undefined)
+	    							// case 3 : a previously existing modified index
+	    							else if (count === 1 && itemindex['item:id'] !== undefined) {
+	    								itemsIndex.update({'item:path': itemindex['item:path']},
+	    										itemindex, function(err){
+	    											if (err !== null) {
+	    												callback(err);
+	    												throw new Error(err);
+	    											} else {
+	    												++updatecount;
+	    												if (updatecount === updatelength) {
+	    													callback(null, {
+	    														'message':"Index update successful",
+	    														'indexModificationCount': updatecount
+	    													});
+	    												}
+	    											}
+	    									
+	    								});
+	    							} // count === 1 && itemindex['item:id'] !== undefined
+	    							// case 4 :  a previously existing deleted index
+	    							else if (count === 1 && itemindex['item:id'] === undefined) {
+	    								collection.remove({'item:path': itemindex['item:path']},
+	    										 {safe:true}, function(err, result) {
+	    											 if (err !== null) {
+	    												 callback(err);
+		    												throw new Error(err);
+		    											} else {
+		    												++updatecount;
+		    												if (updatecount === updatelength) {
+		    													callback(null, {
+		    														'message':"Index update successful",
+		    														'indexModificationCount': updatecount
+		    													});
+		    												}
+		    											}
+	    										 });
+	    							} else { // integrity error
+	    								callback(new Error("Integrity error"));
+	    								throw new Error("Integrity error");
+	    							}
+	    						});
+	    				}
+	    				});
+	    			});
+	    		});
 	    	}//------------------------------ /function updateIndex
 	    	
 	    	// process save
@@ -515,14 +614,21 @@ function Workspace(session, data, callback) {
 	    		if (err === null) {
 	    			updateNodes(function(err, updateRes) {
 	    				if (err === null) {
-	    					var result = {
-	    							'message': "Session.save() - operation successed",
-	    							'createdNodes': insertRes['createdNodes'],
-	    							"updatedNodes": updateRes['updatedNodes']
-	    					};
-	    					self.logger.debug(_.inspect(result));
-	    					self.logger.debug(_.inspect(indexdata));
-	    					callback(null, result);
+	    					updateItemsIndex(function(err, indexRes) {
+	    						if (err === null) {
+		    						var result = {
+		    								'message': "Session.save() - operation successed",
+		    								'createdNodes': insertRes['createdNodes'],
+		    								"updatedNodes": updateRes['updatedNodes'],
+		    								'indexModificationCount': indexRes['indexModificationCount']
+		    						};
+		    						self.logger.debug(_.inspect(result));
+		    						self.logger.debug(_.inspect(self.indexdata));
+		    						callback(null, result);
+	    						} else {
+	    	    					callback(err);
+	    	    				}
+	    					});
 	    				} else {
 	    					callback(err);
 	    				}

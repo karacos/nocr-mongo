@@ -128,6 +128,10 @@ nodeproto = {
 				self['properties'][name] = undefined;
 				delete self['properties'][name];
 				self.ismodified = true;
+				self.session.getWorkspace().indexdata.push({
+					'item:path':self.getPath() + name,
+					'item:type': 'Property',
+					'item:id': undefined});
 			}  // deleting a nonexitent property have no effect
 				callback(null,undefined);
 		}
