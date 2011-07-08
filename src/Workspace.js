@@ -250,12 +250,20 @@ function Workspace(session, data, callback) {
      * API method
      */
     session.getNodeByIdentifier = function(nodeId, callback) {
-    	// TODO: use cache object
     	getItemsIndex(function(err, itemsIndex){
 	    	itemsIndex.find({'item:id': nodeId, 'item:type': 'Node'}).toArray(function(err, items){
-	    		self.logger.trace("found item :" + _.inspect(items));
 	    		if (items.length === 1) {
-	    			repository.getDataById(nodeId, getInstanciateNode(items[0]['path'], callback));
+	    			repository.getDataById(nodeId, function(err, data) {
+	    				if (err === null) {
+	    					getInstanciateNode(items[0]['item:path'], function(err, node) {
+	    						self.logger.error(_.inspect(node));
+	    						callback(err, node);
+	    					})(err,data);
+	    				} else {
+	    					self.logger.error(_.inspect(err));
+	    					callback(err);
+	    				}
+	    			});
 				} else if (items.length === 0) {
 					callback("No node found with this identifier", null);
 				} else {
@@ -638,9 +646,7 @@ function Workspace(session, data, callback) {
 	    		}
 	    	});
     	});
-
     };
-    
 	initWorkspace();
 }
 

@@ -13,7 +13,34 @@ Session = function(repository, credentials, callback) {
 // ============================================================
 // ------------------------------- Private methods declatations
 // ============================================================
-
+	/**
+	 * session initialization
+	 */
+	function initSession() {
+		self.logger = log4js.getLogger("nocr-mongo.Session.INITIALIZE");
+		if (credentials === undefined) {credentials = null;}
+		self.repository = repository;
+		function processUsersCollection(err, collection) {
+			collection.count(function(err, count) {
+				usersCollection = collection;
+				if (count === 0) {
+					self.logger.debug('No user found in db, creating defaults: anonymous and admin');
+					collection.createIndex([['username', 1]], true, function(err, result) {
+						collection.save(
+								[{'username':'admin','password': 'demo', userid: 0,workspace:'admin'},
+								 {'username':'anonymous', userid: -1,workspace:'default'}],
+								 {safe:true},
+								 function() {
+									 validateAuth();
+								 });
+					});
+				} else {
+					validateAuth();
+				}
+			});
+		}
+		client.collection('repository_users', processUsersCollection);
+	}
 	function assignWorkspace() {
 		workspaces.find({'name':self.user.workspace}).limit(1).
 			toArray(function(err, items) {
@@ -99,34 +126,6 @@ Session = function(repository, credentials, callback) {
 				callback(null, self);
 			}
 		}
-	}
-	/**
-	 * session initialization
-	 */
-	function initSession() {
-		self.logger = log4js.getLogger("nocr-mongo.Session.INITIALIZE");
-		if (credentials === undefined) {credentials = null;}
-		self.repository = repository;
-		function processUsersCollection(err, collection) {
-			collection.count(function(err, count) {
-				usersCollection = collection;
-				if (count === 0) {
-					self.logger.debug('No user found in db, creating defaults: anonymous and admin');
-					collection.createIndex([['username', 1]], true, function(err, result) {
-						collection.save(
-								[{'username':'admin','password': 'demo', userid: 0,workspace:'admin'},
-								 {'username':'anonymous', userid: -1,workspace:'default'}],
-								 {safe:true},
-								 function() {
-									 validateAuth();
-								 });
-					});
-				} else {
-					validateAuth();
-				}
-			});
-		}
-		client.collection('repository_users', processUsersCollection);
 	}
 
 // ============================================================

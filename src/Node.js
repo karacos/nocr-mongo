@@ -14,8 +14,14 @@ var nocr = require("NoCR"),
  * @param data
  */
 nodeproto = {
-	getIdentifier: function() {
-		return this.data._id.toString();
+	getIdentifier: function(callback) {
+		self = this;
+//		self.getSession().getNode(self.path,function(err, node){
+//			self.logger.debug(_.inspect(node));
+//		});
+		self.logger.trace(_.inspect(self.data));
+		self.logger.debug("getidentifier returns" + _.inspect(self.data['_id'].toString()));
+		return self.data['_id'].toString();
 	},
 	/**
 	 * Can accept callback func or not, as operations are performed in-memory, there is no async
@@ -245,7 +251,9 @@ nodeproto = {
 				}
 			}
 		});
-
+	},
+	getSession: function() {
+		return this.session;
 	}
 };
 function Node(data, session) {
