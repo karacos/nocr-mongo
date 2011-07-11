@@ -1,14 +1,8 @@
 var 
 	log4js = require('log4js')().configure('./conf/log4js.json'),
 	nocr = require("NoCR"),
-//	nocrMongo = require('nocr-mongo'),
-//	Repository = nocrMongo.Repository,
-	// object import should be line above, as nocr-mongo is now an npm package.
-	// checks for object type agains nocr api (repository instanceof nocr.Repository fails
-	// when all other tests pass
-	// line below works but sounds like a workaround
-	// maybe a packaging issue----
-	Repository = require('../lib/Repository.js'),
+	nocrMongo = require('nocr-mongo'),
+	Repository = nocrMongo.Repository,
 	vows = require('vows'),
 	assert = require('assert'),
 	testSuite, testrepository,
