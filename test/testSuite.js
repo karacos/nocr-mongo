@@ -1,7 +1,8 @@
 var 
 	log4js = require('log4js')().configure('./conf/log4js.json'),
 	nocr = require("NoCR"),
-	//Repository = require('nocr-mongo').Repository,
+//	nocrMongo = require('nocr-mongo'),
+//	Repository = nocrMongo.Repository,
 	// object import should be line above, as nocr-mongo is now an npm package.
 	// checks for object type agains nocr api (repository instanceof nocr.Repository fails
 	// when all other tests pass

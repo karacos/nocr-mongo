@@ -44,6 +44,7 @@
         "url" : "https://github.com/karacos/nocr-mongo.git"
     },
     "dependencies": {
+        "NoCR": ">=0.0.1"
     },
     "engines" : {
         "node": ">=0.4.0"
