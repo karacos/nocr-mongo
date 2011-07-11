@@ -1,14 +1,15 @@
 {
     "name": "nocr-mongo",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "NoCR implementation against a mongodb storage backend.",
     "homepage": "https://github.com/karacos/nocr-mongo",
     "keywords": [
         "javascript",
         "dms",
-        "documents",
-        "generator",
-        "website",
+        "content",
+        "repository",
+        "nocr",
+        "mongodb",
         "cms"
     ],
     "author": {
@@ -44,7 +45,12 @@
         "url" : "https://github.com/karacos/nocr-mongo.git"
     },
     "dependencies": {
-        "NoCR": ">=0.0.1"
+        "NoCR": ">=0.0.1",
+        "log4js": ">=0.2.6",
+        "mongodb": ">=0.9.4-5"
+    },
+    "devDependencies": {
+        "vows": ">=0.5.8"
     },
     "engines" : {
         "node": ">=0.4.0"

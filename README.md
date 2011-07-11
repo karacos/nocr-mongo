@@ -4,29 +4,45 @@
 
 KaraCos-NoCR-MongoDB is a content repository implementing the  NoCR API, a JCR close, but asynchronous content repository API.
 
-### Requirements
+### Installation
 
-* mongodb
-* log4js
-
-```
-npm install mongodb log4js
-```
-
-### Grab submodules
-
-karacos-nocr-mongodb depends on [NoCR](https://github.com/NoCR/NoCR/), as a submodule:
+You only need nodejs and npm to start using nocr-mongo in you project.
 
 ```
-git submodule init
-git submodule  update
+npm install nocr-mongo
 ```
 
-### Launching test suite
-
-The testing framework is vows, install and run commands :
+### Using nocr-mongo
 
 ```
-npm install vows
-vows test/testSuite.js --spec ## This will show the actual features covered
+var nocrMongo = require('nocr-mongo');
+
+Repository = new nocrMongo.Repository({
+	db: {
+		dbname: "my_mongo_db_name", // creates the db if not already exists
+		dbhost: "127.0.0.1", // default mongodb if you have it installed locally
+		dbport: 27017 // default mongodb port
+	}
+	}, function(err, repository) {
+		// login with default username and password (nocr-mongo doesn't provices yet a way to change this.
+		repository.login({'username': "admin", 'password': "demo"}, function(err, session) {
+			// you may use the session object as describes in NoCR API
+			session.getRootNode(function(err, rootNode) {
+				rootNode.addNode('myNode', 'nt:undefined', function(err, myNode) {
+					myNode.setAttribute("myproperty", "mavaleur", function(err, myProperty){
+						//do whatever you want with property, or something else.
+						session.save(); //persist data and indexes in mongodb
+					});
+				});
+			});
+		});
+	});
+```
+
+### Running testsuite
+
+```
+cd nocr-mongo
+npm link
+vows test/testSuite.js --spec
 ```
