@@ -1,8 +1,13 @@
 var 
 	log4js = require('log4js')().configure('./conf/log4js.json'),
-	//Repository = require('nocr-mongo').Repository,
-	Repository = require('../lib/Repository.js'),
 	nocr = require("NoCR"),
+	//Repository = require('nocr-mongo').Repository,
+	// object import should be line above, as nocr-mongo is now an npm package.
+	// checks for object type agains nocr api (repository instanceof nocr.Repository fails
+	// when all other tests pass
+	// line below works but sounds like a workaround
+	// maybe a packaging issue----
+	Repository = require('../lib/Repository.js'),
 	vows = require('vows'),
 	assert = require('assert'),
 	testSuite, testrepository,
@@ -53,11 +58,12 @@ testSuite.addBatch({
 				nocrTests.getRepository().login(credentials, "testWorkSpace",this.callback);
 			},
 			'Test Session object' : function(err,session){
-				assert.ok((session instanceof nocr.Session),'Session is not a session object');
+				nocrTests.setSession(session);
+				assert.ok(err === null, "err returned " + _.inspect(err));
+				assert.ok((session instanceof nocr.Session),'Session is not a session object ' + _.inspect(session));
 				//
 				//Set up session object for testSuite
 				//
-				nocrTests.setSession(session);
 			}
 		},
 		'Testing admin wrong password login': {
