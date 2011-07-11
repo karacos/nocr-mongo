@@ -45,12 +45,20 @@ function Workspace(session, data, callback) {
 			if (err !== null) {
 				self.logger.error(err);
 				callback(err);
+			} else {
+				self.nodes.getNode(abspath, function(err, node) {
+					if (err === null) {
+						callback(null, node);
+					} else {
+						nodeData.path = abspath;
+						node = new Node(nodeData, session);
+						self.nodes.setNode(abspath, node, function(err, node){
+							callback(null, node);
+						});
+						
+					}
+				});
 			}
-			nodeData.path = abspath;
-			node = new Node(nodeData, session);
-			self.nodes.setNode(abspath, node, function(err, node){
-				callback(null, node);
-			});
 		}
 		return instanciateNode;
 	}
@@ -139,7 +147,17 @@ function Workspace(session, data, callback) {
 				session.items.setItem(node.getPath(), node,callback);
 			},
 			getNode: function(abspath,callback) {
-				session.items.getItem(abspath, callback);
+				session.items.getItem(abspath, function(err, node) {
+					if (err !== null) {
+						callback(err);
+					} else {
+						if (node instanceof nocr.Node) {
+							callback(null, node);
+						} else {
+							callback(new Error("Item found but not a valif Node"));
+						}
+					}
+				});
 			}
 		};
 	self.properties = {
@@ -147,7 +165,17 @@ function Workspace(session, data, callback) {
 				session.items.setItem(property.getPath(),callback);
 			},
 			getProperty: function(abspath,callback) {
-				session.items.getItem(abspath, callback);
+				session.items.getItem(abspath, function(err, node) {
+					if (err !== null) {
+						callback(err);
+					} else {
+						if (node instanceof nocr.Property) {
+							callback(null, node);
+						} else {
+							callback(new Error("Item found but not a valid Property"));
+						}
+					}
+				});
 			}
 		};
 	// Defining session access methods here..
@@ -247,7 +275,7 @@ function Workspace(session, data, callback) {
     };
     
     /**
-     * API method
+     * API method for session
      */
     session.getNodeByIdentifier = function(nodeId, callback) {
     	getItemsIndex(function(err, itemsIndex){
@@ -255,8 +283,9 @@ function Workspace(session, data, callback) {
 	    		if (items.length === 1) {
 	    			repository.getDataById(nodeId, function(err, data) {
 	    				if (err === null) {
+	    					
 	    					getInstanciateNode(items[0]['item:path'], function(err, node) {
-	    						self.logger.error(_.inspect(node));
+	    						self.logger.trace(_.inspect(node));
 	    						callback(err, node);
 	    					})(err,data);
 	    				} else {
