@@ -1,0 +1,55 @@
+{
+    "name": "nocr-mongo",
+    "version": "0.0.1",
+    "description": "NoCR implementation against a mongodb storage backend.",
+    "homepage": "https://github.com/karacos/nocr-mongo",
+    "keywords": [
+        "javascript",
+        "dms",
+        "documents",
+        "generator",
+        "website",
+        "cms"
+    ],
+    "author": {
+        "name": "Nicolas Karageuzian",
+        "email": "nka@nka.me",
+        "web": "http://nka.me"
+    },
+    "maintainers": [
+        {
+            "name": "Nicolas Karageuzian",
+            "email": "nka@nka.me",
+            "web": "http://nka.me"
+        }
+    ],
+    "contributors": [
+        {
+            "name": "Nicolas Karageuzian",
+            "email": "nka@nka.me",
+            "web": "http://nka.me"
+        }
+    ],
+    "bugs": {
+        "web": "https://github.com/karacos/nocr-mongo/issues"
+    },
+    "licenses": [
+        {
+            "type": "LGPL",
+            "url": "http://www.gnu.org/licenses/lgpl.html"
+        }
+    ],
+    "repository" : {
+        "type" : "git",
+        "url" : "https://github.com/karacos/nocr-mongo.git"
+    },
+    "dependencies": {
+    },
+    "engines" : {
+        "node": ">=0.4.0"
+    },
+    "directories": {
+        "lib": "lib"
+    },
+    "main": "./lib/nocr-mongo.js"
+}

@@ -1,6 +1,7 @@
 var 
 	log4js = require('log4js')().configure('./conf/log4js.json'),
-	Repository = require('../src/Repository.js'),
+	//Repository = require('nocr-mongo').Repository,
+	Repository = require('../lib/Repository.js'),
 	nocr = require("NoCR"),
 	vows = require('vows'),
 	assert = require('assert'),
@@ -10,7 +11,7 @@ var
 	,nocrTests = nocr.test.ImplTest,
 	credentials = {username: 'admin', password:'demo'};
 nocrTests.setCredentials(credentials);
-testSuite = vows.describe('KaraCos Nu-Q test Suite');
+testSuite = vows.describe('KaraCos NoCR-mongo test Suite');
 testSuite.addBatch({
 	"Clearing Database": {
 		topic: function() {
