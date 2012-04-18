@@ -29,7 +29,7 @@ Repository = new nocrMongo.Repository({
 			// you may use the session object as describes in NoCR API
 			session.getRootNode(function(err, rootNode) {
 				rootNode.addNode('myNode', 'nt:undefined', function(err, myNode) {
-					myNode.setAttribute("myproperty", "mavaleur", function(err, myProperty){
+					myNode.setProperty("myproperty", "mavaleur", function(err, myProperty){
 						//do whatever you want with property, or something else.
 						session.save(); //persist data and indexes in mongodb
 					});
